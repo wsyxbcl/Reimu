@@ -1,3 +1,4 @@
 *.png
+*.jpg
 *.toml
 __pycache__/*
