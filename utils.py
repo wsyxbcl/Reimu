@@ -20,7 +20,7 @@ def data_collector(code='000300', time_begin='19900101', time_end='20991231'):
     stock_data["date"] = pd.to_datetime(stock_data["date"])
     return stock_data
 
-def plot_kline(stock_data, output='./test.jpg'):
+def plot_kline(stock_data, title='', output='./test.jpg'):
     stock_kline = stock_data.set_index("date")
     stock_kline.index = pd.to_datetime(stock_kline.index)
     stock_kline = stock_kline.astype(float)
@@ -29,12 +29,12 @@ def plot_kline(stock_data, output='./test.jpg'):
     style = mpf.make_mpf_style(base_mpf_style='yahoo', rc={'font.size':8})
     fig, axes = mpf.plot(stock_kline, **kwargs, 
                          style=style, 
-                         scale_padding={'left': 0.1, 'top': 0.1, 'right': 1, 'bottom': 1}, 
+                         scale_padding={'left': 0.1, 'top': 1, 'right': 1, 'bottom': 1}, 
                          returnfig=True)
     mav_leg = axes[0].legend(['ma_{}'.format(i) for i in ma_value], loc=9, ncol=3, 
                               prop={'size': 7}, fancybox=True, borderaxespad=0.)
     mav_leg.get_frame().set_alpha(0.4)
-    # axes[0].set_title("test_title")
+    axes[0].set_title(title)
     fig.savefig(output, dpi=300)
 
 if __name__ == '__main__':

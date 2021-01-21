@@ -32,22 +32,36 @@ def get_time_range(days_interval=100):
 async def send_welcome(message):
     await message.reply("Busy in stock marketing, no time for talk")
 
-@dp.message_handler()
+@dp.message_handler(commands=['kline'])
 async def kline(message):
-    code = message.text.split()[0]
+    code = message.text.split()[1]
     try:
-        time_range = get_time_range(int(message.text.split()[1]))
+        time_range = get_time_range(int(message.text.split()[2]))
     except IndexError:
         time_range = get_time_range()
     buf = io.BytesIO()
-    plot_kline(stock_data=data_collector(code, time_range[0], time_range[1]), output=buf)
+    plot_kline(stock_data=data_collector(code, time_range[0], time_range[1]), 
+               title=f'kline of {str(code)}',
+               output=buf)
     buf.seek(0)
     await message.reply_photo(buf, caption=code)
 
-#TODO inline mode to be refined
-@dp.inline_handler()
-async def inline_echo(inline_query):
-    pass
+#TODO inline mode to be developed
+
+# @dp.inline_handler()
+# async def inline_echo(inline_query: types.InlineQuery):
+#     text = inline_query.query or "echo"
+#     results = []
+# 
+#     code = inline_query.query
+# 
+#     results.append(
+#         types.InlineQueryResultPhoto(
+#             id=1, photo_url=mainURL, title=text, thumb_url=mainURL
+#         )
+#     )
+# 
+#     await bot.answer_inline_query(inline_query.id, results=results, cache_time=1)
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
