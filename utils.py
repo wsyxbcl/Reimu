@@ -57,11 +57,16 @@ def stock_query(keyword):
         raise QueryError("Result not in A-SHARE") #TODO may consider broader area
     return stock_list
 
-def data_collector(code='000300', time_begin='19900101', time_end='20991231'):
-    stock_url = eastmoney_base.format(market=1, bench_code=code, time_begin=time_begin, time_end=time_end)
+def data_collector(code='000300', market=1, time_begin='19900101', time_end='20991231'):
+    # market: 1 for sh, 0 for sz (probably)
+    stock_url = eastmoney_base.format(market=market, bench_code=code, time_begin=time_begin, time_end=time_end)
     # print(stock_url)
-    stock_data = pd.DataFrame(map(lambda x: x.split(','), 
-                                   requests.get(stock_url).json()["data"]["klines"]))
+    try:
+        stock_data = pd.DataFrame(map(lambda x: x.split(','), 
+                                      requests.get(stock_url).json()["data"]["klines"]))
+    except TypeError as e:
+        raise QueryError("Can't find kline data") from e
+
     stock_data.columns = ["date", "open", "close", "high", "low", "volume", "money", "change"]
     stock_data["date"] = pd.to_datetime(stock_data["date"])
     return stock_data

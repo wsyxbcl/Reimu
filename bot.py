@@ -38,19 +38,20 @@ async def kline(message):
     if len(stock_data) == 1:
         code = stock_data[0]["Code"]
         name = stock_data[0]["Name"]
+        market = int(stock_data[0]["SecurityType"] == '1') # map the market code
     else:
         stock_list = '\n'.join([stock["Code"]+'\t'+stock["Name"] for stock in stock_data])
-        await message.reply(f"Find {len(stock_data)} results:\n"+stock_list) 
+        await message.reply("Find multiple results, top 5:\n"+stock_list) 
     try:
         time_range = get_time_range(int(message.text.split()[2]))
     except IndexError:
         time_range = get_time_range()
     buf = io.BytesIO()
-    plot_kline(stock_data=data_collector(code, time_range[0], time_range[1]), 
-               title=f'kline of {code} {name}',
+    plot_kline(stock_data=data_collector(code, market, time_range[0], time_range[1]), 
+               title=f'kline of {code}',
                output=buf)
     buf.seek(0)
-    await message.reply_photo(buf, caption=code)
+    await message.reply_photo(buf, caption=code+' '+name)
 
 #TODO inline mode to be developed
 
