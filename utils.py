@@ -18,7 +18,8 @@ class Stock():
     #TODO refined Stock class
     pass
 
-#TODO minus plot
+#TODO minus plot -> /compare command
+#TODO real time price -> /realtime command
 def stock_query(keyword):
     """
     borrowed from https://github.com/pengnanxiaomeimei/stock_data_analysis/
@@ -72,6 +73,8 @@ def data_collector(code='000300', market=1, time_begin='19900101', time_end='209
     return stock_data
 
 def plot_kline(stock_data, title='', output='./test.jpg'):
+    #TODO analysis, e.g. MACD, RSI
+    # issue#316 of mplfinance might be helpful
     stock_kline = stock_data.set_index("date")
     stock_kline.index = pd.to_datetime(stock_kline.index)
     stock_kline = stock_kline.astype(float)

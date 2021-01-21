@@ -11,6 +11,10 @@ from aiogram.types import InlineQuery, \
 
 from utils import *
 
+#TODO logging
+#TODO /compare
+#TODO /realtime
+
 config = toml.load("reimu.toml")
 
 # Configure logging
