@@ -11,14 +11,16 @@ from aiogram.types import InlineQuery, \
 
 from utils import *
 
-#TODO logging
+#TODO complete logging
 #TODO /compare
 #TODO /realtime
 
 config = toml.load("reimu.toml")
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(filename="./hakurei_bot.log",
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    level=logging.INFO)
 
 # Initialize bot and dispatcher
 bot = Bot(token=config["telegram"]["token"])
@@ -38,6 +40,7 @@ async def send_welcome(message):
 
 @dp.message_handler(commands=['kline'])
 async def kline(message):
+    logging.info(f'{message.chat.id}: {message.text}')
     stock_data = stock_query(message.text.split()[1])
     if len(stock_data) == 1:
         code = stock_data[0]["Code"]
