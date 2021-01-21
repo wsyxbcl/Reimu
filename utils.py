@@ -26,7 +26,11 @@ def plot_kline(stock_data, output='./test.jpg'):
     stock_kline = stock_kline.astype(float)
     ma_value = (5, 10, 20)
     kwargs = dict(type='candle', mav=ma_value, volume=True, figratio=(11, 8), figscale=0.85)
-    fig, axes = mpf.plot(stock_kline, **kwargs, style='yahoo', returnfig=True)
+    style = mpf.make_mpf_style(base_mpf_style='yahoo', rc={'font.size':8})
+    fig, axes = mpf.plot(stock_kline, **kwargs, 
+                         style=style, 
+                         scale_padding={'left': 0.1, 'top': 0.1, 'right': 1, 'bottom': 1}, 
+                         returnfig=True)
     mav_leg = axes[0].legend(['ma_{}'.format(i) for i in ma_value], loc=9, ncol=3, 
                               prop={'size': 7}, fancybox=True, borderaxespad=0.)
     mav_leg.get_frame().set_alpha(0.4)
