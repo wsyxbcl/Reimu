@@ -52,7 +52,7 @@ def stock_query(keyword):
     query_result = mes_dict['QuotationCodeTable']['Data']
 
     # filter SH and SZ
-    stock_list = [x for x in query_result if x['SecurityType'] == '1' or x['SecurityType'] == '2']
+    stock_list = [x for x in query_result if x['MktNum'] == '1' or x['MktNum'] == '2']
 
     if not stock_list:
         raise QueryError("Result not in A-SHARE") #TODO may consider broader area
