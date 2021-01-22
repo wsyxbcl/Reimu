@@ -6,7 +6,7 @@ import re
 import toml
 
 from aiogram import Bot, Dispatcher, executor, types
-from aiogram.types import InlineQuery, \
+from aiogram.types import InlineQuery, ParseMode, \
     InputTextMessageContent, InlineQueryResultPhoto
 
 from utils import *
@@ -42,24 +42,28 @@ async def send_welcome(message):
 async def kline(message):
     logging.info(f'{message.chat.id}: {message.text}')
     stock_data = stock_query(message.text.split()[1])
+    print("bot side")
+    print(stock_data)
     logging.info(f'query result:{stock_data}')
     if len(stock_data) == 1:
         code = stock_data[0]["Code"]
         name = stock_data[0]["Name"]
-        market = int(stock_data[0]["MktNum"] == '1') # map the market code
+        # market = int(stock_data[0]["MktNum"] == '1') # map the market code
+        market = int(stock_data[0]["MktNum"]) # map the market code
+        print(f"MarketNum: {market}")
+        try:
+            time_range = get_time_range(int(message.text.split()[2]))
+        except IndexError:
+            time_range = get_time_range()
+        buf = io.BytesIO()
+        plot_kline(stock_data=data_collector(code, market, time_range[0], time_range[1]), 
+                   title=f'kline of {code}',
+                   output=buf)
+        buf.seek(0)
+        await message.reply_photo(buf, caption=code+' '+name)
     else:
-        stock_list = '\n'.join([stock["Code"]+'\t'+stock["Name"] for stock in stock_data])
-        await message.reply("Find multiple results, top 5:\n"+stock_list) 
-    try:
-        time_range = get_time_range(int(message.text.split()[2]))
-    except IndexError:
-        time_range = get_time_range()
-    buf = io.BytesIO()
-    plot_kline(stock_data=data_collector(code, market, time_range[0], time_range[1]), 
-               title=f'kline of {code}',
-               output=buf)
-    buf.seek(0)
-    await message.reply_photo(buf, caption=code+' '+name)
+        stock_list = '\n'.join(['/kline ```'+stock["Code"]+'```'+' '+stock["Name"] for stock in stock_data])
+        await message.reply("Find multiple results:\n"+stock_list, parse_mode=ParseMode.MARKDOWN) 
 
 #TODO inline mode to be developed
 

@@ -24,6 +24,7 @@ def stock_query(keyword):
     """
     borrowed from https://github.com/pengnanxiaomeimei/stock_data_analysis/
     """
+    #TODO Not a good one, to be replaced
     if keyword.isspace() or not keyword:
         raise QueryError("Empty query")
 
@@ -36,6 +37,7 @@ def stock_query(keyword):
     str_parameter += '&input=' + keyword
     str_parameter += '&token=' + token
     str_parameter += '&type=14' # for Securities entry
+    # str_parameter += '&classify=AStock' # for stock only? 
     str_parameter += '&count=5'
     str_parameter += '&_=' + str(time_stamp)
     query_url = query_url + str_parameter
@@ -51,9 +53,11 @@ def stock_query(keyword):
         raise QueryError("Can't find keyword") from e
     query_result = mes_dict['QuotationCodeTable']['Data']
 
-    # filter SH and SZ
-    stock_list = [x for x in query_result if x['MktNum'] == '1' or x['MktNum'] == '2']
-
+    # filter SH and SZ and ?
+    # stock_list = [x for x in query_result if x['MktNum'] == '1' or x['MktNum'] == '2']
+    stock_list = [x for x in query_result if x['Classify'] == 'AStock' or x['Classify'] == '23'] #TODO need a fix
+    stock_list = [x for x in stock_list if x["SecurityTypeName"] != "曾用"]
+    print(stock_list)
     if not stock_list:
         raise QueryError("Result not in A-SHARE") #TODO may consider broader area
     return stock_list
