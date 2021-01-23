@@ -55,7 +55,7 @@ def stock_query(keyword):
 
     # filter SH and SZ and ?
     # stock_list = [x for x in query_result if x['MktNum'] == '1' or x['MktNum'] == '2']
-    stock_list = [x for x in query_result if x['Classify'] == 'AStock' or x['Classify'] == '23'] #TODO need a fix
+    stock_list = [x for x in query_result if x['Classify'] == 'AStock' or x['Classify'] == '23' or x['Classify'] == 'Index'] #TODO need a fix
     stock_list = [x for x in stock_list if x["SecurityTypeName"] != "曾用"]
     print(stock_list)
     if not stock_list:
