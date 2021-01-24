@@ -7,59 +7,99 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 eastmoney_base = "http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={market}.{bench_code}&fields1=f1%2Cf2%2Cf3%2Cf4%2Cf5&fields2=f51%2Cf52%2Cf53%2Cf54%2Cf55%2Cf56%2Cf57%2Cf58&klt=101&fqt=0&beg={time_begin}&end={time_end}"
-#TODO US market
+#TODO US/HK market
+
+#TODO still need a check
+# "沪市（主板、科创板、基金）、深市（主板、中小板、创业板、基金）", guided by Maple
+# http://www.szse.cn/
+# http://www.sse.com.cn/
+_test_stock_code = ['600000', '688111', '510010', '000001', '002001', '300001', '159001']
+
+# For filtering eastmoney searchapi
+# "TypeUS" seems to be a strong factor, but with uncertain meaning 
+# MktNum: MarketName
+stock_market =  {'0': "SZ", '1': "SH"}
+# SecurityType: SecurityTypeName
+stock_type = {'1': "沪A", 
+              '25': "科创板", 
+              '2': "深A", 
+              '8': "基金"}
 
 class QueryError(Exception):
     def __init__(self, message):
         super().__init__(message)
         self.message = message
 
-class Stock():
+class Stock:
     #TODO refined Stock class
-    pass
+    def __init__(self, code, name, market_id, type_id):
+        self.code = code
+        self.name = name
+        self.market_id = market_id
+        self.type_id = type_id
+    @property
+    def stock_market(self):
+        return self.stock_market[market_id]
+    @property
+    def stock_type(self):
+        return self.stock_type[type_id]
+
+    def __repr__(self):
+        return "<Stock code={0.code!r} name={0.name!r} market_id={0.market_id!r} type_id={0.type_id!r}>".format(self)
+    def __str__(self):
+        return "{0.name!s}({0.code!s})".format(self)
+
+
+def _query_test(stock_list):
+    """
+    Leave test 
+    """
+    for stock in stock_list:
+        try:
+            stock_query(stock, echo=True)
+        except QueryError:
+            print(f"QueryError on {stock}")
 
 #TODO minus plot -> /compare command
 #TODO real time price -> /realtime command
-def stock_query(keyword):
+def stock_query(keyword, echo=False):
     """
     borrowed from https://github.com/pengnanxiaomeimei/stock_data_analysis/
+    Not ideal but works.
     """
-    #TODO Not a good one, to be replaced
     if keyword.isspace() or not keyword:
         raise QueryError("Empty query")
-
+    # configure search API
     query_url = 'http://searchapi.eastmoney.com/api/suggest/get'
     cb_param_pre = 'jQuery112406497239864696334_'
     token = 'D43BF722C8E33BDC906FB84D85E326E8'
-
     time_stamp = int(round(time.time() * 1000))
     str_parameter = '?cb=' + cb_param_pre + str(time_stamp)
     str_parameter += '&input=' + keyword
     str_parameter += '&token=' + token
     str_parameter += '&type=14' # for Securities entry
-    # str_parameter += '&classify=AStock' # for stock only? 
     str_parameter += '&count=5'
     str_parameter += '&_=' + str(time_stamp)
     query_url = query_url + str_parameter
 
     r = requests.get(query_url)
     p2 = re.compile(r'[(](.*)[)]', re.S)
-
     result = re.findall(p2, r.content.decode('utf-8'))[0]
-    # print(result)
     try:
         mes_dict = eval(result)
     except NameError as e:
         raise QueryError("Can't find keyword") from e
     query_result = mes_dict['QuotationCodeTable']['Data']
 
-    # filter SH and SZ and ?
-    # stock_list = [x for x in query_result if x['MktNum'] == '1' or x['MktNum'] == '2']
-    stock_list = [x for x in query_result if x['Classify'] == 'AStock' or x['Classify'] == '23' or x['Classify'] == 'Index'] #TODO need a fix
-    stock_list = [x for x in stock_list if x["SecurityTypeName"] != "曾用"]
-    print(stock_list)
+    # Filter result
+    stock_list = [Stock(code=x['Code'], name=x['Name'], market_id=x['MktNum'], type_id=x['SecurityType']) 
+                  for x in query_result if x['MktNum'] in stock_market and \
+                                           x['SecurityType'] in stock_type and\
+                                           x["SecurityTypeName"] != "曾用"]
     if not stock_list:
-        raise QueryError("Result not in A-SHARE") #TODO may consider broader area
+        raise QueryError("Result not in A-SHARE")
+    if echo:
+        print(stock_list)
     return stock_list
 
 def data_collector(code='000300', market=1, time_begin='19900101', time_end='20991231'):
@@ -96,5 +136,6 @@ def plot_kline(stock_data, title='', output='./test.jpg'):
     fig.savefig(output, dpi=300)
 
 if __name__ == '__main__':
-    x = data_collector()
-    plot_kline(x)
+    # x = data_collector()
+    # plot_kline(x)
+    _query_test(_test_stock_code)
