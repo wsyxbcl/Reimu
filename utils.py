@@ -6,7 +6,9 @@ import mplfinance as mpf
 import matplotlib.pyplot as plt
 import pandas as pd
 
+#TODO API for split-adjusted share prices
 eastmoney_base = "http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={market}.{bench_code}&fields1=f1%2Cf2%2Cf3%2Cf4%2Cf5&fields2=f51%2Cf52%2Cf53%2Cf54%2Cf55%2Cf56%2Cf57%2Cf58&klt=101&fqt=0&beg={time_begin}&end={time_end}"
+
 #TODO US/HK market
 
 #TODO still need a check
@@ -23,7 +25,8 @@ stock_market =  {'0': "SZ", '1': "SH"}
 stock_type = {'1': "沪A", 
               '25': "科创板", 
               '2': "深A", 
-              '8': "基金"}
+              '8': "基金", 
+              '5': "指数"}
 
 class QueryError(Exception):
     def __init__(self, message):
@@ -97,21 +100,21 @@ def stock_query(keyword, echo=False):
                                            x['SecurityType'] in stock_type and\
                                            x["SecurityTypeName"] != "曾用"]
     if not stock_list:
-        raise QueryError("Result not in A-SHARE")
+        raise QueryError(f"Result not in A-SHARE\n{query_result}")
     if echo:
         print(stock_list)
     return stock_list
 
-def data_collector(code='000300', market=1, time_begin='19900101', time_end='20991231'):
-    # market: 1 for sh, 0 for sz (probably)
-    stock_url = eastmoney_base.format(market=market, bench_code=code, time_begin=time_begin, time_end=time_end)
-    # print(stock_url)
+def data_collector(stock, time_begin='19900101', time_end='20991231'):
+    stock_url = eastmoney_base.format(market=stock.market_id, 
+                                      bench_code=stock.code, 
+                                      time_begin=time_begin, 
+                                      time_end=time_end)
     try:
         stock_data = pd.DataFrame(map(lambda x: x.split(','), 
                                       requests.get(stock_url).json()["data"]["klines"]))
     except TypeError as e:
         raise QueryError("Can't find kline data") from e
-
     stock_data.columns = ["date", "open", "close", "high", "low", "volume", "money", "change"]
     stock_data["date"] = pd.to_datetime(stock_data["date"])
     return stock_data
@@ -136,6 +139,6 @@ def plot_kline(stock_data, title='', output='./test.jpg'):
     fig.savefig(output, dpi=300)
 
 if __name__ == '__main__':
-    # x = data_collector()
-    # plot_kline(x)
-    _query_test(_test_stock_code)
+    x = data_collector(stock_query('000300', echo=True)[0])
+    plot_kline(x)
+    # _query_test(_test_stock_code)
