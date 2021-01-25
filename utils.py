@@ -119,7 +119,7 @@ def stock_query(keyword, echo=False):
     """
     if (local_stock := keyword+'.pickle') in os.listdir(data_path):
         #TODO do query instead of match
-        with open(local_stock, 'rb') as f:
+        with open(os.path.join(data_path, local_stock), 'rb') as f:
             local_stock = pickle.load(f)
         return [local_stock] # to make return value consistent
 
@@ -179,7 +179,7 @@ def mix_data_collector(stock_mix, price='norm', time_begin='20210101', time_end=
     
     price: 'norm' or 'average'
     """
-    stock_data = [data_collector(stock, time_begin='20210101') for stock in enl_stock_mix.stock_list]
+    stock_data = [data_collector(stock, time_begin='20210101') for stock in stock_mix.stock_list]
     # Checking whether the dates are consistent
     try:
         matrix_date = np.array([np.array(stock['date']) for stock in stock_data])
@@ -192,7 +192,7 @@ def mix_data_collector(stock_mix, price='norm', time_begin='20210101', time_end=
     matrix_close_price = np.array([np.array(stock['close']) for stock in stock_data]).astype(float)
     matrix_volume = np.array([np.array(stock['volume']) for stock in stock_data]).astype(float)
     # only need close price here
-    close_price_mix = np.average(matrix_close_price, axis=0, weights=enl_stock_ratio)
+    close_price_mix = np.average(matrix_close_price, axis=0, weights=stock_mix.holding_ratio)
     if price == 'norm':
         close_price_mix = close_price_mix / close_price_mix[0] # norm to time_begin
     volume_mix = np.sum(matrix_volume, axis=0)
