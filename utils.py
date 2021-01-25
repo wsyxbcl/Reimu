@@ -18,7 +18,7 @@ _test_path = './demo'
 #TODO API for split-adjusted share prices
 eastmoney_base = "http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={market}.{bench_code}&fields1=f1%2Cf2%2Cf3%2Cf4%2Cf5&fields2=f51%2Cf52%2Cf53%2Cf54%2Cf55%2Cf56%2Cf57%2Cf58&klt=101&fqt=0&beg={time_begin}&end={time_end}"
 
-#TODO US/HK market
+#TODO HK market
 
 #TODO still need a check
 # "沪市（主板、科创板、基金）、深市（主板、中小板、创业板、基金）", guided by Maple
@@ -29,7 +29,7 @@ _test_stock_code = ['600000', '688111', '510010', '000001', '002001', '300001', 
 # For filtering eastmoney searchapi
 # "TypeUS" seems to be a strong factor, but with uncertain meaning 
 # MktNum: MarketName
-stock_market =  {'0': "SZ", '1': "SH"}
+stock_market =  {'0': "SZ", '1': "SH", '105': "US"}
 # SecurityType: SecurityTypeName
 stock_type = {'1': "沪A", 
               '25': "科创板", 
@@ -150,7 +150,7 @@ def stock_query(keyword, echo=False):
     # Filter result
     stock_list = [Stock(code=x['Code'], name=x['Name'], market_id=x['MktNum'], type_id=x['SecurityType']) 
                   for x in query_result if x['MktNum'] in stock_market and \
-                                           x['SecurityType'] in stock_type and\
+                                           (x['SecurityType'] in stock_type or x['Classify'] == "UsStock") and\
                                            x["SecurityTypeName"] != "曾用"]
     if not stock_list:
         raise QueryError(f"Result not in A-SHARE\n{query_result}")
