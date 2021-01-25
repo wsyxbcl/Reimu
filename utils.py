@@ -72,7 +72,7 @@ class Stock_mix:
         self.holding_ratio = holding_ratio
         self.create_time = create_time #TODO just date is fine, consider using utf-8
 
-    def draw(self, benefits= None, output=os.path.join(_test_path, 'stock_mix.jpg')):
+    def draw(self, benefits=None, output=os.path.join(_test_path, 'stock_mix.jpg')):
         #TODO may combine with benefits
         labels = [stock.name for stock in self.stock_list]
         ratios = [ratio for ratio in self.holding_ratio]
@@ -250,7 +250,7 @@ if __name__ == '__main__':
                       "石头科技", "恒力石化", "三一重工", "恒立液压", "上机数控", 
                       "金域医学", "英科医疗", "安井食品", "高德红外", "比亚迪", 
                       "东方财富"]
-    enl_stock_ratio = [1/len(enl_stock_name)] * len(enl_stock_name)
+    enl_stock_ratio = [1 / len(enl_stock_name)] * len(enl_stock_name)
     enl_stock_mix = gen_stock_mix(mix_code='enl001', mix_name="enl stock mix", stock_names=enl_stock_name, holding_ratios=enl_stock_ratio)
     enl_stock_mix.draw()
     print(enl_stock_mix)
