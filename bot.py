@@ -41,7 +41,6 @@ async def send_welcome(message):
 
 @dp.message_handler(commands=['kline'])
 async def kline(message):
-    matplotlib.font_manager._rebuild() #TODO checkout font rebuild
     logging.info(f'{message.chat.id}: {message.text}')
     stock_list = stock_query(keyword=message.text.split()[1])
     logging.info(f'query result:{stock_list}')
@@ -69,7 +68,6 @@ async def kline(message):
 
 @dp.message_handler(commands=['define'])
 async def define(message):
-    matplotlib.font_manager._rebuild()
     #TODO consider argparser or inline keyboard
     logging.info(f'{message.chat.id}: {message.text}')
     code = message.text.split()[1]
@@ -104,5 +102,5 @@ async def define(message):
 #     await bot.answer_inline_query(inline_query.id, results=results, cache_time=1)
 
 if __name__ == '__main__':
-    matplotlib.font_manager._rebuild()
+    matplotlib.rcParams['font.family'] = ['Source Han Sans']
     executor.start_polling(dp, skip_updates=True)
