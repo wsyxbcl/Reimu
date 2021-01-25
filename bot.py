@@ -53,7 +53,7 @@ async def kline(message):
             time_range = get_time_range()
         buf = io.BytesIO()
         if type(stock) == Stock_mix:
-            plot_kline(stock_data=mix_data_collector(stock, time_begin=time_range[0], time_end=time_range[1]), 
+            plot_kline(stock_data=mix_data_collector(stock, price='average', time_begin=time_range[0], time_end=time_range[1]), 
                        title=f'kline of {stock.code}',
                        plot_type='line',
                        output=buf)
