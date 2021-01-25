@@ -8,9 +8,11 @@ import toml
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import InlineQuery, ParseMode, \
     InputTextMessageContent, InlineQueryResultPhoto
+import matplotlib.font_manager
 
 from utils import *
 
+matplotlib.font_manager._rebuild()
 #TODO complete logging
 #TODO /compare
 #TODO /realtime
@@ -51,7 +53,7 @@ async def kline(message):
             time_range = get_time_range()
         buf = io.BytesIO()
         if type(stock) == Stock_mix:
-            plot_kline(stock_data=mix_data_collector(stock, time_range[0], time_range[1]), 
+            plot_kline(stock_data=mix_data_collector(stock, time_begin=time_range[0], time_end=time_range[1]), 
                        title=f'kline of {stock.code}',
                        plot_type='line',
                        output=buf)
