@@ -79,7 +79,7 @@ class Stock_mix:
             pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
         
     def __repr__(self):
-        return "<Stock_mix code={0.code!r} name={0.name!r}".format(self)
+        return "<Stock_mix code={0.code!r} name={0.name!r}>".format(self)
     def __str__(self):
         return "{0.name!s}({0.code!s}), created at {0.create_time!s}\n".format(self) +\
                "\n".join("{!s}\t{:.1%}".format(stock, ratio)\
