@@ -75,7 +75,7 @@ async def define(message):
     buf = io.BytesIO()
     stock_mix.draw(output=buf)
     buf.seek(0)
-    await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+"created")
+    await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+" created")
 
 #TODO inline mode to be developed
 
