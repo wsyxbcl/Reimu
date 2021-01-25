@@ -1,10 +1,14 @@
+import datetime
+import os
+import pickle
 import re
 import time
 
-import requests
 import mplfinance as mpf
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
+import requests
 
 #TODO API for split-adjusted share prices
 eastmoney_base = "http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={market}.{bench_code}&fields1=f1%2Cf2%2Cf3%2Cf4%2Cf5&fields2=f51%2Cf52%2Cf53%2Cf54%2Cf55%2Cf56%2Cf57%2Cf58&klt=101&fqt=0&beg={time_begin}&end={time_end}"
@@ -51,6 +55,33 @@ class Stock:
         return "<Stock code={0.code!r} name={0.name!r} market_id={0.market_id!r} type_id={0.type_id!r}>".format(self)
     def __str__(self):
         return "{0.name!s}({0.code!s})".format(self)
+
+class Stock_mix:
+    """
+    Mixed stocks, Inherence not considered currently 
+    """
+    def __init__(self, code, name, stock_list, holding_ratio, create_time=datetime.datetime.utcnow()):
+        self.code = code
+        self.name = name
+        self.stock_list = stock_list
+        self.holding_ratio = holding_ratio
+        self.create_time = create_time #TODO just date is fine, consider using utf-8
+
+    def draw(self):
+        #TODO may combine with benefits
+        pass
+
+    def save(self):
+        output=os.path.join('./data', self.code+'.pickle')
+        with open(output, 'wb') as f:
+            pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
+        
+    def __repr__(self):
+        return "<Stock_mix code={0.code!r} name={0.name!r}".format(self)
+    def __str__(self):
+        return "{0.name!s}({0.code!s}), created at {0.create_time!s}\n".format(self) +\
+               "\n".join("{!s}\t{:.1%}".format(stock, ratio)\
+               for stock, ratio in zip(self.stock_list, self.holding_ratio))
 
 
 def _query_test(stock_list):
@@ -119,26 +150,86 @@ def data_collector(stock, time_begin='19900101', time_end='20991231'):
     stock_data["date"] = pd.to_datetime(stock_data["date"])
     return stock_data
 
-def plot_kline(stock_data, title='', output='./test.jpg'):
+def mix_data_collector(stock_mix, price='norm', time_begin='20210101', time_end='20991231'):
+    """
+    Collecting and postprocessing for Stock_mix, where only close price are collected
+    Noted that long time range can cause date inconsistency
+    
+    price: 'norm' or 'average'
+    """
+    stock_data = [data_collector(stock, time_begin='20210101') for stock in enl_stock_mix.stock_list]
+    # Checking whether the dates are consistent
+    try:
+        matrix_date = np.array([np.array(stock['date']) for stock in stock_data])
+    except ValueError:
+        # operands could not be broadcast together
+        raise
+    if not np.equal(matrix_date[0], matrix_date).all():
+        print("date inconsistent")
+
+    matrix_close_price = np.array([np.array(stock['close']) for stock in stock_data]).astype(float)
+    matrix_volume = np.array([np.array(stock['volume']) for stock in stock_data]).astype(float)
+    # only need close price here
+    close_price_mix = np.average(matrix_close_price, axis=0, weights=enl_stock_ratio)
+    if price == 'norm':
+        close_price_mix = close_price_mix / close_price_mix[0] # norm to time_begin
+    volume_mix = np.sum(matrix_volume, axis=0)
+    mix_data = stock_data[0].copy()
+    mix_data = mix_data.drop(['money', 'change'], axis=1)
+    mix_data['close'] = close_price_mix
+    mix_data['volume'] = volume_mix
+    # Data redundancy, rather inelegant here, might go PR on mplfinance (or simplily using plot instead)
+    mix_data['low'] = mix_data['open'] = mix_data['high'] = np.zeros(len(stock_data[0]['date']))
+    return mix_data
+
+def plot_kline(stock_data, title='', plot_type='candle', output='./test.jpg'):
     #TODO analysis, e.g. MACD, RSI
     # issue#316 of mplfinance might be helpful
     stock_kline = stock_data.set_index("date")
     stock_kline.index = pd.to_datetime(stock_kline.index)
     stock_kline = stock_kline.astype(float)
-    ma_value = (5, 10, 20)
-    kwargs = dict(type='candle', mav=ma_value, volume=True, figratio=(11, 8), figscale=0.85)
+    if plot_type == 'line':
+        ma_value = ()
+    else:
+        ma_value = (5, 10, 20)
+    kwargs = dict(type=plot_type, mav=ma_value, volume=True, figratio=(11, 8), figscale=0.85)
     style = mpf.make_mpf_style(base_mpf_style='yahoo', rc={'font.size':8})
     fig, axes = mpf.plot(stock_kline, **kwargs, 
                          style=style, 
                          scale_padding={'left': 0.1, 'top': 1, 'right': 1, 'bottom': 1}, 
                          returnfig=True)
-    mav_leg = axes[0].legend(['ma_{}'.format(i) for i in ma_value], loc=9, ncol=3, 
-                              prop={'size': 7}, fancybox=True, borderaxespad=0.)
-    mav_leg.get_frame().set_alpha(0.4)
+    if ma_value:
+        mav_leg = axes[0].legend(['ma_{}'.format(i) for i in ma_value], loc=9, ncol=3, 
+                                prop={'size': 7}, fancybox=True, borderaxespad=0.)
+        mav_leg.get_frame().set_alpha(0.4)
     axes[0].set_title(title)
     fig.savefig(output, dpi=300)
 
+def gen_stock_mix(mix_code, mix_name, stock_names, holding_ratios):
+    stock_list = []
+    for stock_name in stock_names:
+        query_result = stock_query(stock_name, echo=True)
+        if len(query_result) == 1:
+            stock_list.append(query_result[0])
+        else:
+            print("multiple query results on "+stock_name)
+    stock_mix = Stock_mix(code=mix_code, name=mix_name, stock_list=stock_list, 
+                              holding_ratio=holding_ratios)
+    stock_mix.save()
+    print(stock_mix)
+    return stock_mix
+
 if __name__ == '__main__':
-    x = data_collector(stock_query('000300', echo=True)[0])
-    plot_kline(x)
+    # x = data_collector(stock_query('000300', echo=True)[0])
+    # plot_kline(x, plot_type='line')
     # _query_test(_test_stock_code)
+    enl_stock_name = ["隆基股份", "通威股份", "宁德时代", "亿纬锂能", "药明康德", 
+                      "华大基因", "中船防务", "航发动力", "海康威视", "金山办公", 
+                      "石头科技", "恒力石化", "三一重工", "恒立液压", "上机数控", 
+                      "金域医学", "英科医疗", "安井食品", "高德红外", "比亚迪", 
+                      "东方财富"]
+    enl_stock_ratio = [1/len(enl_stock_name)] * len(enl_stock_name)
+    enl_stock_mix = gen_stock_mix(mix_code='enl001', mix_name="enl stock mix", stock_names=enl_stock_name, holding_ratios=enl_stock_ratio)
+    print(enl_stock_mix)
+    mix_data = mix_data_collector(enl_stock_mix)
+    plot_kline(mix_data, title=enl_stock_mix.name, plot_type='line')
