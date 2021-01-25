@@ -65,16 +65,17 @@ async def define(message):
     logging.info(f'{message.chat.id}: {message.text}')
     code = message.text.split()[1]
     name = message.text.split()[2]
-    stock_list = message.text[message.text.find("(")+1:message.text.find(")")]
+    stock_names = message.text[message.text.find("(")+1:message.text.find(")")]
+    stock_list = [stock_name for stock_name in stock_names.split()]
     if message.text.split()[-1] == 'equal':
         holding_ratio = [1 / len(stock_list)] * len(stock_list)
-    stock_mix = Stock_mix((code=, name, stock_list=stock_list, holding_ratio=holding_ratio, create_time=datetime.datetime.utcnow())
+    stock_mix = gen_stock_mix(code, name, stock_names=stock_list, holding_ratios=holding_ratio)
     stock_mix.save()
     logging.info(f'creating stock mix:{stock_mix}')
     buf = io.BytesIO()
     stock_mix.draw(output=buf)
     buf.seek(0)
-    await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name created)
+    await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+"created")
 
 #TODO inline mode to be developed
 
