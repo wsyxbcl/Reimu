@@ -29,7 +29,7 @@ _test_stock_code = ['600000', '688111', '510010', '000001', '002001', '300001', 
 # For filtering eastmoney searchapi
 # "TypeUS" seems to be a strong factor, but with uncertain meaning 
 # MktNum: MarketName
-stock_market =  {'0': "SZ", '1': "SH", '105': "US"}
+stock_market =  {'0': "SZ", '1': "SH", '105': "US", '106': "US"} #TODO figure out US market
 # SecurityType: SecurityTypeName
 stock_type = {'1': "沪A", 
               '25': "科创板", 
