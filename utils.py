@@ -190,7 +190,7 @@ def mix_data_collector(stock_mix, price='norm', time_begin='20210101', time_end=
     mix_data['low'] = mix_data['open'] = mix_data['high'] = np.zeros(len(stock_data[0]['date']))
     return mix_data
 
-def plot_kline(stock_data, title='', plot_type='candle', output=os.join(_test_path, 'kline.jpg'):
+def plot_kline(stock_data, title='', plot_type='candle', output=os.path.join(_test_path, 'kline.jpg')):
     #TODO analysis, e.g. MACD, RSI
     # issue#316 of mplfinance might be helpful
     stock_kline = stock_data.set_index("date")

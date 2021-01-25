@@ -51,10 +51,10 @@ async def kline(message):
             time_range = get_time_range()
         buf = io.BytesIO()
         plot_kline(stock_data=data_collector(stock, time_range[0], time_range[1]), 
-                   title=f'kline of {code}',
+                   title=f'kline of {stock.code}',
                    output=buf)
         buf.seek(0)
-        await message.reply_photo(buf, caption=code+' '+name)
+        await message.reply_photo(buf, caption=stock.code+' '+stock.name)
     else:
         await message.reply("Find multiple results:\n"+'\n'.join(['/kline ```'+stock.code+'```'+' '+stock.name for stock in stock_list]), 
                             parse_mode=ParseMode.MARKDOWN) 
