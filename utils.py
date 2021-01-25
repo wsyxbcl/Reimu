@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import requests
 
+data_path = './data'
 #TODO API for split-adjusted share prices
 eastmoney_base = "http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={market}.{bench_code}&fields1=f1%2Cf2%2Cf3%2Cf4%2Cf5&fields2=f51%2Cf52%2Cf53%2Cf54%2Cf55%2Cf56%2Cf57%2Cf58&klt=101&fqt=0&beg={time_begin}&end={time_end}"
 
@@ -72,7 +73,7 @@ class Stock_mix:
         pass
 
     def save(self):
-        output=os.path.join('./data', self.code+'.pickle')
+        output=os.path.join(data_path, self.code+'.pickle')
         with open(output, 'wb') as f:
             pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
         
@@ -101,6 +102,12 @@ def stock_query(keyword, echo=False):
     borrowed from https://github.com/pengnanxiaomeimei/stock_data_analysis/
     Not ideal but works.
     """
+    if (local_stock := keyword+'.pickle') in os.listdir(data_path):
+        #TODO do query instead of match
+        with open(local_stock, 'rb') as f:
+            local_stock = pickle.load(f)
+        return [local_stock] # to make return value consistent
+
     if keyword.isspace() or not keyword:
         raise QueryError("Empty query")
     # configure search API
