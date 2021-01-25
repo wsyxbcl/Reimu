@@ -11,6 +11,7 @@ import pandas as pd
 import requests
 
 data_path = './data'
+_test_path = './demo'
 #TODO API for split-adjusted share prices
 eastmoney_base = "http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={market}.{bench_code}&fields1=f1%2Cf2%2Cf3%2Cf4%2Cf5&fields2=f51%2Cf52%2Cf53%2Cf54%2Cf55%2Cf56%2Cf57%2Cf58&klt=101&fqt=0&beg={time_begin}&end={time_end}"
 
@@ -189,7 +190,7 @@ def mix_data_collector(stock_mix, price='norm', time_begin='20210101', time_end=
     mix_data['low'] = mix_data['open'] = mix_data['high'] = np.zeros(len(stock_data[0]['date']))
     return mix_data
 
-def plot_kline(stock_data, title='', plot_type='candle', output='./test.jpg'):
+def plot_kline(stock_data, title='', plot_type='candle', output=os.join(_test_path, 'kline.jpg'):
     #TODO analysis, e.g. MACD, RSI
     # issue#316 of mplfinance might be helpful
     stock_kline = stock_data.set_index("date")
