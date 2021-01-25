@@ -179,7 +179,7 @@ def mix_data_collector(stock_mix, price='norm', time_begin='20210101', time_end=
     
     price: 'norm' or 'average'
     """
-    stock_data = [data_collector(stock, time_begin='20210101') for stock in stock_mix.stock_list]
+    stock_data = [data_collector(stock, time_begin=time_begin, time_end=time_end) for stock in stock_mix.stock_list]
     # Checking whether the dates are consistent
     try:
         matrix_date = np.array([np.array(stock['date']) for stock in stock_data])
