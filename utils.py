@@ -5,10 +5,13 @@ import re
 import time
 
 import mplfinance as mpf
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import requests
+
+matplotlib.rcParams['font.family'] = ['Source Han Sans']
 
 data_path = './data'
 _test_path = './demo'
@@ -69,9 +72,20 @@ class Stock_mix:
         self.holding_ratio = holding_ratio
         self.create_time = create_time #TODO just date is fine, consider using utf-8
 
-    def draw(self):
+    def draw(self, benefits= None, output=os.path.join(_test_path, 'stock_mix.jpg')):
         #TODO may combine with benefits
-        pass
+        labels = [stock.name for stock in self.stock_list]
+        ratios = [ratio for ratio in self.holding_ratio]
+        colors = plt.cm.get_cmap('tab20c').colors
+        fig1, ax1 = plt.subplots()
+        ax1.pie(ratios, colors=colors, labels=labels, autopct='%1.1f%%', startangle=90) #draw circle
+        centre_circle = plt.Circle((0, 0), 0.70, fc='white')
+        fig = plt.gcf()
+        fig.gca().add_artist(centre_circle) # Equal aspect ratio ensures that pie is drawn as a circle
+        ax1.axis('equal')
+        ax1.set_title(f"{self.name}({self.code}), created at {self.create_time}(UTC)")
+        plt.tight_layout()
+        fig.savefig(output, dpi=300)
 
     def save(self):
         output=os.path.join(data_path, self.code+'.pickle')
@@ -238,6 +252,7 @@ if __name__ == '__main__':
                       "东方财富"]
     enl_stock_ratio = [1/len(enl_stock_name)] * len(enl_stock_name)
     enl_stock_mix = gen_stock_mix(mix_code='enl001', mix_name="enl stock mix", stock_names=enl_stock_name, holding_ratios=enl_stock_ratio)
+    enl_stock_mix.draw()
     print(enl_stock_mix)
     mix_data = mix_data_collector(enl_stock_mix)
     plot_kline(mix_data, title=enl_stock_mix.name, plot_type='line')
