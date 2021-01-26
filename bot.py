@@ -94,12 +94,14 @@ async def check(message):
     #TODO achieve argparser-like behavior here
     stock_list = stock_query(keyword=message.text.split()[1])
     logging.info(f'query result:{stock_list}')
-
     if len(stock_list) == 1 and type(stock_mix := stock_list[0]) is Stock_mix:
-        try:
-            time_begin, _ = get_time_range(int(message.text.split()[2]))
-        except IndexError:
+        if '-d' in message.text or '--detail' in message.text:
             time_begin = stock_mix.create_time.strftime("%Y%m%d")
+        else:
+            try:
+                time_begin, _ = get_time_range(int(message.text.split()[2]))
+            except IndexError:
+                time_begin = stock_mix.create_time.strftime("%Y%m%d")
         buf = io.BytesIO()
         stock_data, matrix_close_price = mix_data_collector(stock_mix, price='average', time_begin=time_begin)
         profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, date_ref=stock_mix.create_time)
