@@ -3,3 +3,5 @@
 *.toml
 *.log
 __pycache__/*
+data/*
+demo/*
