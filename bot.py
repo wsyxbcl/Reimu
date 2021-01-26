@@ -106,14 +106,14 @@ async def check(message):
         stock_data, matrix_close_price = mix_data_collector(stock_mix, price='average', time_begin=time_begin)
         profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, date_ref=stock_mix.create_time)
         if '-d' in message.text or '--detail' in message.text:
-            plot_stock_profit(stock_data, stock_profit_ratio, 
+            plot_stock_profit(stock_mix, stock_profit_ratio, 
                               title=f'{stock_mix.code} {stock_mix.name} from {time_begin} (UTC)',
                               output=buf)
         else:
             plot_profitline(stock_data, profit_ratio, 
                             title=f'{stock_mix.code} {stock_mix.name} from {time_begin} (UTC)',
                             output=buf)
-            buf.seek(0)
+        buf.seek(0)
         await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+\
                                                "\n当前收益率: {:.2%}".format(profit_ratio[-1]))
     else:
@@ -135,7 +135,7 @@ async def now(message):
         datetime_yesterday = datetime.datetime.utcnow() - datetime.timedelta(days=1)
         stock_data, matrix_close_price = mix_data_collector(stock_mix, price='average', time_begin=datetime_yesterday)
         profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, date_ref=stock_mix.create_time)
-        plot_stock_profit(mix_data, stock_profit_ratio, 
+        plot_stock_profit(stock_mix, stock_profit_ratio, 
                           title=f'{stock.code} {stock.name} from {datetime_yesterday.strftime("%Y%m%d")}(UTC)', 
                           output=buf)
         await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+\
