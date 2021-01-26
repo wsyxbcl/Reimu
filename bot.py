@@ -52,7 +52,8 @@ async def kline(message):
             time_range = get_time_range()
         buf = io.BytesIO()
         if type(stock) == Stock_mix:
-            plot_kline(stock_data=mix_data_collector(stock, price='average', time_begin=time_range[0], time_end=time_range[1]), 
+            stock_data, _ = mix_data_collector(stock, price='average', time_begin=time_range[0], time_end=time_range[1])
+            plot_kline(stock_data=stock_data, 
                        title=f'kline of {stock.code}',
                        plot_type='line',
                        output=buf)
@@ -84,6 +85,68 @@ async def define(message):
     buf.seek(0)
     await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+" created")
 
+@dp.message_handler(commands=['check'])
+async def check(message):
+    """
+    check and plot the profit ratio of given stock mix
+    """
+    logging.info(f'{message.chat.id}: {message.text}')
+    #TODO achieve argparser-like behavior here
+    stock_list = stock_query(keyword=message.text.split()[1])
+    logging.info(f'query result:{stock_list}')
+    if len(stock_list) == 1 and type(stock_mix := stock_list[0]) is Stock_mix:
+        if '-d' in message.text or '--detail' in message.text:
+            time_begin = stock_mix.create_time.strftime("%Y%m%d")
+        else:
+            try:
+                time_begin, _ = get_time_range(int(message.text.split()[2]))
+            except IndexError:
+                time_begin = stock_mix.create_time.strftime("%Y%m%d")
+        buf = io.BytesIO()
+        stock_data, matrix_close_price = mix_data_collector(stock_mix, price='average', time_begin=time_begin)
+        profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, date_ref=stock_mix.create_time)
+        if '-d' in message.text or '--detail' in message.text:
+            plot_stock_profit(stock_mix, stock_profit_ratio, 
+                              title=f'{stock_mix.code} {stock_mix.name} from {time_begin} (UTC)',
+                              output=buf)
+        else:
+            plot_profitline(stock_data, profit_ratio, 
+                            title=f'profit ratio of {stock_mix.code} from {time_begin} (UTC)',
+                            output=buf)
+        buf.seek(0)
+        await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+\
+                                               "\n当前收益率: {:.2%}".format(profit_ratio[-1]))
+    else:
+        pass
+        #TODO if there will be stock_mix query
+
+@dp.message_handler(commands=['now'])
+async def now(message):
+    logging.info(f'{message.chat.id}: {message.text}')
+    #TODO achieve argparser-like behavior here
+    stock_list = stock_query(keyword=message.text.split()[1])
+    logging.info(f'query result:{stock_list}')
+    if len(stock_list) == 1 and type(stock_mix := stock_list[0]) is Stock_mix:
+        try:
+            time_begin, _ = get_time_range(int(message.text.split()[2]))
+        except IndexError:
+            time_begin = stock_mix.create_time.strftime("%Y%m%d")
+        buf = io.BytesIO()
+        datetime_yesterday = (datetime.datetime.utcnow() - datetime.timedelta(days=1)).strftime("%Y%m%d")
+        stock_data, matrix_close_price = mix_data_collector(stock_mix, price='average', time_begin=datetime_yesterday)
+        profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, date_ref=stock_mix.create_time)
+        plot_stock_profit(stock_mix, stock_profit_ratio, 
+                          title=f'{stock_mix.code} {stock_mix.name} from {datetime_yesterday}(UTC)', 
+                          output=buf)
+        buf.seek(0)
+        await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+\
+                                               "\n今日收益率: {:.2%}".format(profit_ratio[-1]))
+    else:
+        pass
+        #TODO combined with dayline
+
+
+#@dp.message_handler()
 #TODO inline mode to be developed
 
 # @dp.inline_handler()
@@ -104,3 +167,5 @@ async def define(message):
 if __name__ == '__main__':
     matplotlib.rcParams['font.family'] = ['Source Han Sans']
     executor.start_polling(dp, skip_updates=True)
+
+datetime.datetime.utcnow() - datetime.timedelta(days=1)
