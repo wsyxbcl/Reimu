@@ -37,6 +37,16 @@ stock_type = {'1': "沪A",
               '8': "基金", 
               '5': "指数"}
 
+# kline color style
+mc = {'candle': {'up': '#fe3032', 'down': '#00b060'},
+      'edge': {'up': '#fe3032', 'down': '#00b060'},
+      'wick': {'up': '#fe3032', 'down': '#00b060'},
+      'ohlc': {'up': '#fe3032', 'down': '#00b060'},
+      'volume': {'up': '#fd6b6c', 'down': '#4dc790'},
+      'vcedge': {'up': '#1f77b4', 'down': '#1f77b4'},
+      'vcdopcod': False,
+      'alpha': 0.7}
+
 class QueryError(Exception):
     def __init__(self, message):
         super().__init__(message)
@@ -242,7 +252,6 @@ def plot_kline(stock_data, title='', plot_type='candle', volume=True, output=os.
     else:
         ma_value = (5, 10, 20)
     kwargs = dict(type=plot_type, mav=ma_value, volume=volume, figratio=(11, 8), figscale=0.85)
-    mc = mpf.make_marketcolors(up='#fe3032',down='#00b060',inherit=True)
     style = mpf.make_mpf_style(base_mpf_style='yahoo', rc={'font.size':8}, marketcolors=mc)
     fig, axes = mpf.plot(stock_kline, **kwargs, 
                          style=style, 
@@ -302,8 +311,9 @@ def gen_stock_mix(mix_code, mix_name, stock_names, holding_ratios):
     return stock_mix
 
 if __name__ == '__main__':
-    # x = data_collector(stock_query('000300', echo=True)[0])
-    # plot_kline(x, plot_type='line')
+    x = data_collector(stock_query('000300', echo=True)[0], time_begin='20210101')
+    plot_kline(x)
+
     # _query_test(_test_stock_code)
     # enl_stock_name = ["隆基股份", "通威股份", "宁德时代", "亿纬锂能", "药明康德", 
     #                   "华大基因", "中船防务", "航发动力", "海康威视", "金山办公", 
@@ -312,15 +322,16 @@ if __name__ == '__main__':
     #                   "东方财富"]
     # enl_stock_ratio = [1 / len(enl_stock_name)] * len(enl_stock_name)
     # enl_stock_mix = gen_stock_mix(mix_code='enl001', mix_name="enl stock mix", stock_names=enl_stock_name, holding_ratios=enl_stock_ratio)
-    enl_stock_mix = stock_query('enl001')[0]
-    enl_stock_mix.draw()
-    print(enl_stock_mix)
-    mix_data, matrix_close_price = mix_data_collector(enl_stock_mix)
-    datetime_yesterday = datetime.datetime.utcnow() - datetime.timedelta(days=1)
-    profit_ratio, stock_profit_ratio = enl_stock_mix.get_profit_ratio(mix_data, matrix_close_price, date_ref=datetime_yesterday)
-    print(profit_ratio)
-    print(stock_profit_ratio)
-    plot_kline(mix_data, title=enl_stock_mix.name, plot_type='line', volume=False)
-    matplotlib.rcParams['font.family'] = ['Source Han Sans']
-    plot_profitline(mix_data, profit_ratio)
-    plot_stock_profit(enl_stock_mix, stock_profit_ratio)
+
+    # enl_stock_mix = stock_query('enl001')[0]
+    # enl_stock_mix.draw()
+    # print(enl_stock_mix)
+    # mix_data, matrix_close_price = mix_data_collector(enl_stock_mix)
+    # datetime_yesterday = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+    # profit_ratio, stock_profit_ratio = enl_stock_mix.get_profit_ratio(mix_data, matrix_close_price, date_ref=datetime_yesterday)
+    # print(profit_ratio)
+    # print(stock_profit_ratio)
+    # plot_kline(mix_data, title=enl_stock_mix.name, plot_type='line', volume=False)
+    # matplotlib.rcParams['font.family'] = ['Source Han Sans']
+    # plot_profitline(mix_data, profit_ratio)
+    # plot_stock_profit(enl_stock_mix, stock_profit_ratio)
