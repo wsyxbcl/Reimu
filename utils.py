@@ -99,7 +99,7 @@ class Stock_mix:
         # in one mixed stock 
 
         # Timezone convert
-        if not date_ref:
+        if date_ref is None:
             date_ref_index_utc = pd.Timestamp(self.create_time).tz_localize('UTC')
         else:
             date_ref_index_utc = pd.Timestamp(date_ref).tz_localize('UTC')
@@ -198,13 +198,13 @@ def data_collector(stock, time_begin='19900101', time_end='20991231'):
     stock_data["date"] = pd.to_datetime(stock_data["date"])
     return stock_data
 
-def mix_data_collector(stock_mix, price='norm', time_begin='20210101', time_end='20991231'):
+def mix_data_collector(stock_mix, time_begin='20210101', time_end='20991231', time_ref=None):
     """
     Collecting and postprocessing for Stock_mix, where only close price are collected
     Noted that long time range can cause date inconsistency
-    
-    price: 'norm' or 'average'
     """
+    if time_ref is None:
+        time_ref = time_begin
     stock_data = [data_collector(stock, time_begin=time_begin, time_end=time_end) for stock in stock_mix.stock_list]
     # Checking whether the dates are consistent
     try:
@@ -216,16 +216,16 @@ def mix_data_collector(stock_mix, price='norm', time_begin='20210101', time_end=
         print("date inconsistent")
 
     matrix_close_price = np.array([np.array(stock['close']) for stock in stock_data]).astype(float)
-    matrix_volume = np.array([np.array(stock['volume']) for stock in stock_data]).astype(float)
+    # matrix_volume = np.array([np.array(stock['volume']) for stock in stock_data]).astype(float)
     # only need close price here
-    close_price_mix = np.average(matrix_close_price, axis=0, weights=stock_mix.holding_ratio)
-    if price == 'norm':
-        close_price_mix = close_price_mix / close_price_mix[0] # norm to time_begin
-    volume_mix = np.sum(matrix_volume, axis=0)
+    close_price_ref = matrix_close_price[:, 0]
+    stock_share_ratios = stock_mix.holding_ratio / close_price_ref
+    value_mix = np.average(matrix_close_price, axis=0, weights=stock_share_ratios) 
+    value_mix = value_mix / value_mix[0] # norm to 1
     mix_data = stock_data[0].copy()
-    mix_data = mix_data.drop(['money', 'change'], axis=1)
-    mix_data['close'] = close_price_mix
-    mix_data['volume'] = volume_mix
+    mix_data = mix_data.drop(['money', 'change', 'volume'], axis=1)
+    mix_data['close'] = value_mix
+    # mix_data['volume'] = volume_mix
     # Data redundancy, rather inelegant here, might go PR on mplfinance (or simplily using plot instead)
     mix_data['low'] = mix_data['open'] = mix_data['high'] = np.zeros(len(stock_data[0]['date']))
     return mix_data, matrix_close_price # to be used in profit analysis
@@ -313,12 +313,12 @@ if __name__ == '__main__':
     enl_stock_mix = stock_query('enl001')[0]
     enl_stock_mix.draw()
     print(enl_stock_mix)
-    mix_data, matrix_close_price = mix_data_collector(enl_stock_mix, price='average')
+    mix_data, matrix_close_price = mix_data_collector(enl_stock_mix)
     datetime_yesterday = datetime.datetime.utcnow() - datetime.timedelta(days=1)
     profit_ratio, stock_profit_ratio = enl_stock_mix.get_profit_ratio(mix_data, matrix_close_price, date_ref=datetime_yesterday)
     print(profit_ratio)
     print(stock_profit_ratio)
-    plot_kline(mix_data, title=enl_stock_mix.name, plot_type='line')
+    plot_kline(mix_data, title=enl_stock_mix.name, plot_type='line', volume=False)
     matplotlib.rcParams['font.family'] = ['Source Han Sans']
     plot_profitline(mix_data, profit_ratio)
     plot_stock_profit(enl_stock_mix, stock_profit_ratio)

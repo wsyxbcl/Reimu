@@ -52,10 +52,12 @@ async def kline(message):
             time_range = get_time_range()
         buf = io.BytesIO()
         if type(stock) == Stock_mix:
-            stock_data, _ = mix_data_collector(stock, price='average', time_begin=time_range[0], time_end=time_range[1])
+            stock_data, _ = mix_data_collector(stock, time_begin=time_range[0], time_end=time_range[1], 
+                                               time_ref=stock.create_time.strftime("%Y%m%d"))
             plot_kline(stock_data=stock_data, 
                        title=f'kline of {stock.code}',
                        plot_type='line',
+                       volume=False, 
                        output=buf)
         else:        
             plot_kline(stock_data=data_collector(stock, time_range[0], time_range[1]), 
@@ -104,7 +106,7 @@ async def check(message):
                 time_begin = stock_mix.create_time.strftime("%Y%m%d")
         buf = io.BytesIO()
         time_now = datetime.datetime.utcnow().strftime("%Y%m%d %H:%M:%S")
-        stock_data, matrix_close_price = mix_data_collector(stock_mix, price='average', time_begin=time_begin)
+        stock_data, matrix_close_price = mix_data_collector(stock_mix, time_begin=time_begin)
         profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, date_ref=stock_mix.create_time)
         if '-d' in message.text or '--detail' in message.text:
             plot_stock_profit(stock_mix, stock_profit_ratio, 
@@ -135,7 +137,7 @@ async def now(message):
         buf = io.BytesIO()
         time_now = datetime.datetime.utcnow().strftime("%Y%m%d %H:%M:%S")
         datetime_yesterday = (datetime.datetime.utcnow() - datetime.timedelta(days=1)).strftime("%Y%m%d")
-        stock_data, matrix_close_price = mix_data_collector(stock_mix, price='average', time_begin=datetime_yesterday)
+        stock_data, matrix_close_price = mix_data_collector(stock_mix, time_begin=datetime_yesterday)
         profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, date_ref=datetime_yesterday)
         plot_stock_profit(stock_mix, stock_profit_ratio, 
                           title=f'{stock_mix.name} {datetime_yesterday}-{time_now} (UTC)', 
