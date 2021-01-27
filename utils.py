@@ -241,7 +241,8 @@ def plot_kline(stock_data, title='', plot_type='candle', volume=True, output=os.
     else:
         ma_value = (5, 10, 20)
     kwargs = dict(type=plot_type, mav=ma_value, volume=volume, figratio=(11, 8), figscale=0.85)
-    style = mpf.make_mpf_style(base_mpf_style='yahoo', rc={'font.size':8})
+    mc = mpf.make_marketcolors(up='#fe3032',down='#00b060',inherit=True)
+    style = mpf.make_mpf_style(base_mpf_style='yahoo', rc={'font.size':8}, marketcolors=mc)
     fig, axes = mpf.plot(stock_kline, **kwargs, 
                          style=style, 
                          scale_padding={'left': 0.1, 'top': 1, 'right': 1, 'bottom': 1}, 
