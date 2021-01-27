@@ -103,16 +103,16 @@ async def check(message):
             except IndexError:
                 time_begin = stock_mix.create_time.strftime("%Y%m%d")
         buf = io.BytesIO()
-        time_now = datetime.datetime.utcnow().strftime("%Y%m%d %H%M%S")
+        time_now = datetime.datetime.utcnow().strftime("%Y%m%d %H:%M:%S")
         stock_data, matrix_close_price = mix_data_collector(stock_mix, price='average', time_begin=time_begin)
         profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, date_ref=stock_mix.create_time)
         if '-d' in message.text or '--detail' in message.text:
             plot_stock_profit(stock_mix, stock_profit_ratio, 
-                              title=f'Return rates in {stock_mix.name} {time_begin}-{time_now} (UTC)',
+                              title=f'{stock_mix.name} {time_begin}-{time_now} (UTC)',
                               output=buf)
         else:
             plot_profitline(stock_data, profit_ratio, 
-                            title=f'Return rate of {stock_mix.code} {time_begin}-{time_now} (UTC)',
+                            title=f'Return rate of {stock_mix.code}, {time_begin}-{time_now} (UTC)',
                             output=buf)
         buf.seek(0)
         await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+\
@@ -133,12 +133,12 @@ async def now(message):
         except IndexError:
             time_begin = stock_mix.create_time.strftime("%Y%m%d")
         buf = io.BytesIO()
-        time_now = datetime.datetime.utcnow().strftime("%Y%m%d %H%M%S")
+        time_now = datetime.datetime.utcnow().strftime("%Y%m%d %H:%M:%S")
         datetime_yesterday = (datetime.datetime.utcnow() - datetime.timedelta(days=1)).strftime("%Y%m%d")
         stock_data, matrix_close_price = mix_data_collector(stock_mix, price='average', time_begin=datetime_yesterday)
         profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, date_ref=datetime_yesterday)
         plot_stock_profit(stock_mix, stock_profit_ratio, 
-                          title=f'Return rates in {stock_mix.name} {datetime_yesterday}-{time_now} (UTC)', 
+                          title=f'{stock_mix.name} {datetime_yesterday}-{time_now} (UTC)', 
                           output=buf)
         buf.seek(0)
         await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+\
