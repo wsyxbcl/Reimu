@@ -258,7 +258,7 @@ def plot_profitline(stock_data, profit_ratio, title='', output=os.path.join(_tes
     stock_profitline = stock_data.set_index("date")
     stock_profitline.index = pd.to_datetime(stock_profitline.index)
     stock_profitline = stock_profitline.astype(float)
-    kwargs = dict(type='line', volume=False, ylabel='Profit ratio', figratio=(11, 8), figscale=0.85)
+    kwargs = dict(type='line', volume=False, ylabel='Return Rate', figratio=(11, 8), figscale=0.85)
     style = mpf.make_mpf_style(base_mpf_style='yahoo', rc={'font.size':8})
     fig, axes = mpf.plot(stock_profitline, **kwargs, 
                          style=style, 
@@ -279,7 +279,7 @@ def plot_stock_profit(stock_mix, stock_profit_ratio, title='', output=os.path.jo
     plt.figure()
     plt.hlines(y=stock_df.index, xmin=0, xmax=stock_df.profit, color=stock_df.colors, alpha=0.4, linewidth=5)
 
-    plt.gca().set(ylabel='Stock', xlabel='Profit ratio')
+    plt.gca().set(ylabel='Stock', xlabel='Return Rate')
     plt.yticks(stock_df.index, stock_df.name, fontsize=8)
     plt.title(title)
     # plt.grid(linestyle='--', alpha=0.5)
