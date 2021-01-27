@@ -134,7 +134,7 @@ async def now(message):
         buf = io.BytesIO()
         datetime_yesterday = (datetime.datetime.utcnow() - datetime.timedelta(days=1)).strftime("%Y%m%d")
         stock_data, matrix_close_price = mix_data_collector(stock_mix, price='average', time_begin=datetime_yesterday)
-        profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, date_ref=stock_mix.create_time)
+        profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, date_ref=datetime_yesterday)
         plot_stock_profit(stock_mix, stock_profit_ratio, 
                           title=f'{stock_mix.code} {stock_mix.name} from {datetime_yesterday}(UTC)', 
                           output=buf)
