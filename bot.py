@@ -44,23 +44,28 @@ async def kline(message):
     logging.info(f'{message.chat.id}: {message.text}')
     stock_list = stock_query(keyword=message.text.split()[1])
     logging.info(f'query result:{stock_list}')
+    time_given = False # a dirty fix for stock_mix keyline
     if len(stock_list) == 1:
         stock = stock_list[0]
         try:
-            time_range = get_time_range(int(message.text.split()[2]))
+            time_begin, time_end = get_time_range(int(message.text.split()[2]))
+            time_given = True
         except IndexError:
-            time_range = get_time_range()
+            time_begin, time_end = get_time_range()
         buf = io.BytesIO()
         if type(stock) == Stock_mix:
-            stock_data, _ = mix_data_collector(stock, time_begin=time_range[0], time_end=time_range[1], 
-                                               time_ref=stock.create_time.strftime("%Y%m%d"))
+            time_mix_created = stock.create_time.strftime("%Y%m%d")
+            if not time_given:
+                time_begin = time_mix_created
+            stock_data, _ = mix_data_collector(stock, time_begin=time_begin, time_end=time_end, 
+                                               time_ref=time_mix_created)
             plot_kline(stock_data=stock_data, 
                        title=f'kline of {stock.code}',
                        plot_type='line',
                        volume=False, 
                        output=buf)
         else:        
-            plot_kline(stock_data=data_collector(stock, time_range[0], time_range[1]), 
+            plot_kline(stock_data=data_collector(stock, time_begin, time_end), 
                        title=f'kline of {stock.code}',
                        output=buf)
         buf.seek(0)
