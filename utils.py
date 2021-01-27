@@ -205,6 +205,7 @@ def mix_data_collector(stock_mix, time_begin='20210101', time_end='20991231', ti
     """
     if time_ref is None:
         time_ref = time_begin
+    #TODO use time_ref data when plot kline and 'value' as ylabel
     stock_data = [data_collector(stock, time_begin=time_begin, time_end=time_end) for stock in stock_mix.stock_list]
     # Checking whether the dates are consistent
     try:
