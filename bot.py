@@ -37,7 +37,7 @@ def get_time_range(days_interval=100):
 
 @dp.message_handler(commands=['start', 'help'])
 async def send_welcome(message):
-    await message.reply("Busy in stock marketing, no time for talk")
+    await message.reply("Busy in stock trading, no time for talk") 
 
 @dp.message_handler(commands=['kline'])
 async def kline(message):
@@ -111,7 +111,7 @@ async def check(message):
                               output=buf)
         else:
             plot_profitline(stock_data, profit_ratio, 
-                            title=f'profit ratio of {stock_mix.code} from {time_begin} (UTC)',
+                            title=f'Return rate of {stock_mix.code} from {time_begin} (UTC)',
                             output=buf)
         buf.seek(0)
         await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+\
