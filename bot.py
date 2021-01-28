@@ -27,7 +27,7 @@ logging.basicConfig(filename="./hakurei_bot.log",
 bot = Bot(token=config["telegram"]["token"])
 dp = Dispatcher(bot)
 
-def get_time_range(days_interval=100):
+def get_time_range(days_interval=120):
     """
     return ({days_interval} days ago, today + 1)
     """
@@ -48,10 +48,14 @@ async def kline(message):
     if len(stock_list) == 1:
         stock = stock_list[0]
         try:
-            time_begin, time_end = get_time_range(int(message.text.split()[2]))
-            time_given = True
+            days_interval = int(message.text.split()[2])
+            time_begin, time_end = get_time_range(days_interval)
         except IndexError:
             time_begin, time_end = get_time_range()
+            macd = True
+        else:
+            time_given = True
+            macd = (days_interval >= 100)
         buf = io.BytesIO()
         if type(stock) == Stock_mix:
             time_mix_created = stock.create_time.strftime("%Y%m%d")
@@ -63,10 +67,12 @@ async def kline(message):
                        title=f'kline of {stock.code}',
                        plot_type='line',
                        volume=False, 
+                       macd=macd, 
                        output=buf)
         else:        
             plot_kline(stock_data=data_collector(stock, time_begin, time_end), 
                        title=f'kline of {stock.code}',
+                       macd=macd, 
                        output=buf)
         buf.seek(0)
         await message.reply_photo(buf, caption=stock.code+' '+stock.name)

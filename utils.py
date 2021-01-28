@@ -241,7 +241,7 @@ def mix_data_collector(stock_mix, time_begin='20210101', time_end='20991231', ti
     mix_data['low'] = mix_data['open'] = mix_data['high'] = np.zeros(len(stock_data[0]['date']))
     return mix_data, matrix_close_price # to be used in profit analysis
 
-def plot_kline(stock_data, title='', plot_type='candle', volume=True, output=os.path.join(_test_path, 'kline.jpg')):
+def plot_kline(stock_data, title='', plot_type='candle', volume=True, macd=False, output=os.path.join(_test_path, 'kline.jpg')):
     #TODO analysis, e.g. MACD, RSI
     # issue#316 of mplfinance might be helpful
     stock_kline = stock_data.set_index("date")
@@ -251,14 +251,40 @@ def plot_kline(stock_data, title='', plot_type='candle', volume=True, output=os.
         ma_value = ()
     else:
         ma_value = (5, 10, 20)
-    kwargs = dict(type=plot_type, mav=ma_value, volume=volume, figratio=(11, 8), figscale=0.85)
+    if macd:
+        # Using MACD(12,26,9) here
+        # https://en.wikipedia.org/wiki/MACD
+        ema_12 = stock_data['close'].ewm(span=12, adjust=False).mean()
+        ema_26 = stock_data['close'].ewm(span=26, adjust=False).mean()
+        macd_line = ema_12 - ema_26
+        macd_signal = macd_line.ewm(span=9, adjust=False).mean()
+        macd_histogram = macd_line - macd_signal
+
+        apds = [# mpf.make_addplot(ema_12, color='lime'),
+                # mpf.make_addplot(ema_26, color='c'),
+                mpf.make_addplot(macd_histogram, type='bar', width=0.7, panel=1,
+                                 color='dimgray', alpha=1, secondary_y=False),
+                mpf.make_addplot(macd_line, panel=1, color='b', width=0.5, secondary_y=True),
+                mpf.make_addplot(macd_signal, panel=1, color='r', width=0.5, secondary_y=True)]
+        if volume:
+            kwargs = dict(type=plot_type, addplot=apds, mav=ma_value, volume=volume, 
+                          figratio=(4, 3), figscale=0.85, volume_panel=2, panel_ratios=(6, 3, 2))
+        else:
+            kwargs = dict(type=plot_type, addplot=apds, mav=ma_value, volume=volume, 
+                          figratio=(11, 8), figscale=0.85)
+    else:
+        kwargs = dict(type=plot_type, mav=ma_value, volume=volume, figratio=(11, 8), figscale=0.85)
     style = mpf.make_mpf_style(base_mpf_style='yahoo', rc={'font.size':8}, marketcolors=mc)
     fig, axes = mpf.plot(stock_kline, **kwargs, 
                          style=style, 
-                         scale_padding={'left': 0.1, 'top': 1, 'right': 1, 'bottom': 1}, 
+                         scale_padding={'left': 0.4, 'top': 1, 'right': 1, 'bottom': 1}, 
                          returnfig=True)
     if ma_value:
         mav_leg = axes[0].legend(['ma_{}'.format(i) for i in ma_value], loc=9, ncol=3, 
+                                prop={'size': 7}, fancybox=True, borderaxespad=0.)
+        mav_leg.get_frame().set_alpha(0.4)
+    if macd:
+        mav_leg = axes[3].legend(["MACD", "MACD Signal"], loc=9, ncol=3, 
                                 prop={'size': 7}, fancybox=True, borderaxespad=0.)
         mav_leg.get_frame().set_alpha(0.4)
     axes[0].set_title(title)
@@ -312,7 +338,7 @@ def gen_stock_mix(mix_code, mix_name, stock_names, holding_ratios):
 
 if __name__ == '__main__':
     x = data_collector(stock_query('000300', echo=True)[0], time_begin='20210101')
-    plot_kline(x)
+    plot_kline(x, title='test_kline', plot_type='candle', volume=True, macd=True)
 
     # _query_test(_test_stock_code)
     # enl_stock_name = ["隆基股份", "通威股份", "宁德时代", "亿纬锂能", "药明康德", 
