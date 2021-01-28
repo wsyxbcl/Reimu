@@ -78,13 +78,11 @@ async def kline(message):
         buf.seek(0)
         await message.reply_photo(buf, caption=stock.code+' '+stock.name)
     else:
-        keyboard_markup = types.ReplyKeyboardMarkup(row_width=3)
-        btns_text = ['/kline ```'+stock.code+'```'+' '+stock.name for stock in stock_list]
-        keyboard_markup.row(*(types.KeyboardButton(text) for text in btns_text))
+        keyboard_markup = types.ReplyKeyboardMarkup()
+        keyboard_markup.row(*['/kline '+stock.code for stock in stock_list])
 
-        # await message.reply("Find multiple results:\n"+'\n'.join(['/kline ```'+stock.code+'```'+' '+stock.name for stock in stock_list]), 
-                            # parse_mode=ParseMode.MARKDOWN) 
-        await message.reply("Find multiple results", reply_markup=keyboard_markup)
+        await message.reply("Find multiple results:\n"+'\n'.join([stock.code+' '+stock.name for stock in stock_list]), reply_markup=keyboard_markup) 
+        # await message.reply("Find multiple results", reply_markup=keyboard_markup)
 
 @dp.message_handler(commands=['define'])
 async def define(message):
