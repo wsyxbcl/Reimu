@@ -61,6 +61,7 @@ async def kline(message):
             time_mix_created = stock.create_time.strftime("%Y%m%d")
             if not time_given:
                 time_begin = time_mix_created
+                macd = False
             stock_data, _ = mix_data_collector(stock, time_begin=time_begin, time_end=time_end, 
                                                time_ref=time_mix_created)
             plot_kline(stock_data=stock_data, 
