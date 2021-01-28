@@ -78,13 +78,58 @@ async def kline(message):
         buf.seek(0)
         await message.reply_photo(buf, caption=stock.code+' '+stock.name, reply_markup=types.ReplyKeyboardRemove())
     else:
-        keyboard_markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+        # keyboard_markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+        keyboard_markup = types.InlineKeyboardMarkup()
         for stock in stock_list:
-            keyboard_markup.row('/kline '+stock.code+'('+stock.name)
+            # keyboard_markup.row('/kline '+stock.code+'('+stock.name)
+            keyboard_markup.row(types.InlineKeyboardButton(market_emoji[stock_market[stock.market_id]]+' '+stock.code+' '+stock.name, callback_data='/kline '+stock.code+'('+stock.name))
         # keyboard_markup.row(*['/kline '+stock.code+'('+stock.name for stock in stock_list])
-        await message.reply("Find multiple results:\n"+'\n'.join([market_emoji[stock_market[stock.market_id]]+' `'+stock.code+'`'+' '+stock.name for stock in stock_list]), reply_markup=keyboard_markup, parse_mode=ParseMode.MARKDOWN) 
-        # await message.reply("Find multiple results", reply_markup=keyboard_markup)
+        # await message.reply("Find multiple results:\n"+'\n'.join([market_emoji[stock_market[stock.market_id]]+' `'+stock.code+'`'+' '+stock.name for stock in stock_list]), reply_markup=keyboard_markup, parse_mode=ParseMode.MARKDOWN) 
+        # await message.reply_photo("AgACAgUAAxkBAAIDo2ATM9WT3dUW46It5rOxnlK_bNyrAAJ4rDEbUSyYVJ8XxhWXhidYOi0xb3QAAwEAAwIAA20AA86cAQABHgQ", caption="Find multiple results", reply_markup=keyboard_markup)
 
+        # await message.reply_photo("AgACAgUAAxkBAAIDxmATQbw5mLxlweLwCYpRAyx04Y8YAALzqjEbgr-YVCjTJJaDtw2qd5WDb3QAAwEAAwIAA20AAzzlAQABHgQ", caption="Find multiple results", reply_markup=keyboard_markup)
+
+        await message.reply_photo("AgACAgUAAxkBAAIDymATQjsOZbFGxGqQMKt-Q_MUyUXdAAL1qjEbgr-YVC1IVvhlQFtLfoeybnQAAwEAAwIAA20AA47jAQABHgQ", caption="Find multiple results", reply_markup=keyboard_markup)
+
+@dp.callback_query_handler(lambda cb: '/kline' in cb.data)
+async def inline_kline_answer_callback_handler(query):
+    logging.info(f'{query.inline_message_id}: {query.data}')
+    stock_list = stock_query(keyword=query.data.split()[1])
+    logging.info(f'query result:{stock_list}')
+    time_given = False # a dirty fix for stock_mix keyline
+    stock = stock_list[0]
+    try:
+        days_interval = int(query.data.split()[2])
+        time_begin, time_end = get_time_range(days_interval)
+    except IndexError:
+        time_begin, time_end = get_time_range()
+        macd = True
+    else:
+        time_given = True
+        macd = (days_interval >= 100)
+    buf = io.BytesIO()
+    if type(stock) == Stock_mix:
+        time_mix_created = stock.create_time.strftime("%Y%m%d")
+        if not time_given:
+            time_begin = time_mix_created
+            macd = False
+        stock_data, _ = mix_data_collector(stock, time_begin=time_begin, time_end=time_end, 
+                                           time_ref=time_mix_created)
+        plot_kline(stock_data=stock_data, 
+                   title=f'kline of {stock.code}',
+                   plot_type='line',
+                   volume=False, 
+                   macd=macd, 
+                   output=buf)
+    else:        
+        plot_kline(stock_data=data_collector(stock, time_begin, time_end), 
+                   title=f'kline of {stock.code}',
+                   macd=macd, 
+                   output=buf)
+    buf.seek(0)
+    await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=stock.code+' '+stock.name))
+    # await query.message.edit_caption(stock.code+' '+stock.name)
+ 
 @dp.message_handler(commands=['define'])
 async def define(message):
     #TODO consider argparser or inline keyboard
@@ -165,6 +210,10 @@ async def now(message):
         pass
         #TODO combined with dayline
 
+# To get photo file_id
+# @dp.message_handler(content_types=['photo'])
+# async def echo(message):
+#     await message.answer(str(message.photo[0].file_id))
 
 #@dp.message_handler()
 #TODO inline mode to be developed
