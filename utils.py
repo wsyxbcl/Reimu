@@ -153,7 +153,17 @@ def stock_query(keyword, echo=False):
     borrowed from https://github.com/pengnanxiaomeimei/stock_data_analysis/
     Not ideal but works.
     """
-    if (local_stock := keyword+'.pickle') in os.listdir(data_path):
+    search_keyword = keyword.split('(')[0]
+    # Advanced search, to deal with duplicated query results
+    # Only stock_name / stock_code is supported now
+    # i.e. stock_name(stock_code or stock_code(stock_name
+    try:
+        advanced_search_keyword = keyword.split('(')[1]
+        print(advanced_search_keyword)
+    except IndexError:
+        advanced_search_keyword = None
+
+    if (local_stock := search_keyword+'.pickle') in os.listdir(data_path):
         #TODO do query instead of match
         with open(os.path.join(data_path, local_stock), 'rb') as f:
             local_stock = pickle.load(f)
@@ -167,7 +177,7 @@ def stock_query(keyword, echo=False):
     token = 'D43BF722C8E33BDC906FB84D85E326E8'
     time_stamp = int(round(time.time() * 1000))
     str_parameter = '?cb=' + cb_param_pre + str(time_stamp)
-    str_parameter += '&input=' + keyword
+    str_parameter += '&input=' + search_keyword
     str_parameter += '&token=' + token
     str_parameter += '&type=14' # for Securities entry
     str_parameter += '&count=5'
@@ -188,6 +198,9 @@ def stock_query(keyword, echo=False):
                   for x in query_result if x['MktNum'] in stock_market and \
                                            (x['SecurityType'] in stock_type or x['Classify'] == "UsStock") and\
                                            x["SecurityTypeName"] != "曾用"]
+    if advanced_search_keyword is not None:
+        stock_list = [x for x in stock_list if (x.name == advanced_search_keyword) or (x.code == advanced_search_keyword)] 
+        print(stock_list)
     if not stock_list:
         raise QueryError(f"Result not in A-SHARE\n{query_result}")
     if echo:
