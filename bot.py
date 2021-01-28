@@ -76,10 +76,12 @@ async def kline(message):
                        macd=macd, 
                        output=buf)
         buf.seek(0)
-        await message.reply_photo(buf, caption=stock.code+' '+stock.name)
+        await message.reply_photo(buf, caption=stock.code+' '+stock.name, reply_markup=types.ReplyKeyboardRemove())
     else:
         keyboard_markup = types.ReplyKeyboardMarkup()
-        keyboard_markup.row(*['/kline '+stock.code+'('+stock.name for stock in stock_list])
+        for stock in stock_list:
+            keyboard_markup.row('/kline '+stock.code+'('+stock.name)
+        # keyboard_markup.row(*['/kline '+stock.code+'('+stock.name for stock in stock_list])
 
         await message.reply("Find multiple results:\n"+'\n'.join([stock.code+' '+stock.name for stock in stock_list]), reply_markup=keyboard_markup) 
         # await message.reply("Find multiple results", reply_markup=keyboard_markup)
