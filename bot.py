@@ -44,22 +44,21 @@ async def kline(message):
     logging.info(f'{message.chat.id}: {message.text}')
     stock_list = stock_query(keyword=message.text.split()[1])
     logging.info(f'query result:{stock_list}')
-    time_given = False # a dirty fix for stock_mix keyline
+    try:
+        days_interval = message.text.split()[2]
+    except IndexError:
+        time_begin, time_end = get_time_range()
+        days_interval = ''
+        macd = True
+    else:
+        time_begin, time_end = get_time_range(int(days_interval))
+        macd = (int(days_interval) >= 100)
     if len(stock_list) == 1:
         stock = stock_list[0]
-        try:
-            days_interval = int(message.text.split()[2])
-            time_begin, time_end = get_time_range(days_interval)
-        except IndexError:
-            time_begin, time_end = get_time_range()
-            macd = True
-        else:
-            time_given = True
-            macd = (days_interval >= 100)
         buf = io.BytesIO()
         if type(stock) == Stock_mix:
             time_mix_created = stock.create_time.strftime("%Y%m%d")
-            if not time_given:
+            if days_interval == '':
                 time_begin = time_mix_created
                 macd = False
             stock_data, _ = mix_data_collector(stock, time_begin=time_begin, time_end=time_end, 
@@ -82,7 +81,9 @@ async def kline(message):
         keyboard_markup = types.InlineKeyboardMarkup()
         for stock in stock_list:
             # keyboard_markup.row('/kline '+stock.code+'('+stock.name)
-            keyboard_markup.row(types.InlineKeyboardButton(market_emoji[stock_market[stock.market_id]]+' '+stock.code+' '+stock.name, callback_data='/kline '+stock.code+'('+stock.name))
+            keyboard_markup.row(types.InlineKeyboardButton(' '.join([market_emoji[stock_market[stock.market_id]], stock.code, stock.name]), callback_data='/kline '+stock.code+'('+stock.name+' '+days_interval))
+        # add exit button
+        keyboard_markup.row(types.InlineKeyboardButton('exit', callback_data='exit'))
         # keyboard_markup.row(*['/kline '+stock.code+'('+stock.name for stock in stock_list])
         # await message.reply("Find multiple results:\n"+'\n'.join([market_emoji[stock_market[stock.market_id]]+' `'+stock.code+'`'+' '+stock.name for stock in stock_list]), reply_markup=keyboard_markup, parse_mode=ParseMode.MARKDOWN) 
         # await message.reply_photo("AgACAgUAAxkBAAIDo2ATM9WT3dUW46It5rOxnlK_bNyrAAJ4rDEbUSyYVJ8XxhWXhidYOi0xb3QAAwEAAwIAA20AA86cAQABHgQ", caption="Find multiple results", reply_markup=keyboard_markup)
@@ -92,8 +93,12 @@ async def kline(message):
         await message.reply_photo("AgACAgUAAxkBAAIDymATQjsOZbFGxGqQMKt-Q_MUyUXdAAL1qjEbgr-YVC1IVvhlQFtLfoeybnQAAwEAAwIAA20AA47jAQABHgQ", caption="Find multiple results", reply_markup=keyboard_markup)
 
 @dp.callback_query_handler(lambda cb: '/kline' in cb.data)
+@dp.callback_query_handler(text='exit')
 async def inline_kline_answer_callback_handler(query):
     logging.info(f'{query.inline_message_id}: {query.data}')
+    if query.data == 'exit':
+        await query.message.delete()
+        return 1
     stock_list = stock_query(keyword=query.data.split()[1])
     logging.info(f'query result:{stock_list}')
     time_given = False # a dirty fix for stock_mix keyline
