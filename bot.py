@@ -44,6 +44,7 @@ async def kline(message):
     logging.info(f'{message.chat.id}: {message.text}')
     stock_list = stock_query(keyword=message.text.split()[1])
     logging.info(f'query result:{stock_list}')
+    # Get time_range from user input
     try:
         days_interval = message.text.split()[2]
     except IndexError:
@@ -53,6 +54,7 @@ async def kline(message):
     else:
         time_begin, time_end = get_time_range(int(days_interval))
         macd = (int(days_interval) >= 100)
+
     if len(stock_list) == 1:
         stock = stock_list[0]
         buf = io.BytesIO()
@@ -63,37 +65,27 @@ async def kline(message):
                 macd = False
             stock_data, _ = mix_data_collector(stock, time_begin=time_begin, time_end=time_end, 
                                                time_ref=time_mix_created)
-            plot_kline(stock_data=stock_data, 
-                       title=f'kline of {stock.code}',
-                       plot_type='line',
-                       volume=False, 
-                       macd=macd, 
-                       output=buf)
+            plot_kline(stock_data=stock_data, title=f'kline of {stock.code}',
+                       plot_type='line', volume=False, macd=macd, output=buf)
         else:        
             plot_kline(stock_data=data_collector(stock, time_begin, time_end), 
                        title=f'kline of {stock.code}',
-                       macd=macd, 
-                       output=buf)
+                       macd=macd, output=buf)
         buf.seek(0)
         await message.reply_photo(buf, caption=stock.code+' '+stock.name, reply_markup=types.ReplyKeyboardRemove())
     else:
-        # keyboard_markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
         keyboard_markup = types.InlineKeyboardMarkup()
         for stock in stock_list:
-            # keyboard_markup.row('/kline '+stock.code+'('+stock.name)
-            keyboard_markup.row(types.InlineKeyboardButton(' '.join([market_emoji[stock_market[stock.market_id]], stock.code, stock.name]), callback_data='/kline '+stock.code+'('+stock.name+' '+days_interval))
+            stock_emoji = market_emoji[stock_market[stock.market_id]]
+            keyboard_markup.row(types.InlineKeyboardButton(' '.join([stock_emoji, stock.code, stock.name]), 
+                                callback_data='/kline '+stock.code+'('+stock.name+' '+days_interval))
         # add exit button
         keyboard_markup.row(types.InlineKeyboardButton('exit', callback_data='exit'))
-        # keyboard_markup.row(*['/kline '+stock.code+'('+stock.name for stock in stock_list])
-        # await message.reply("Find multiple results:\n"+'\n'.join([market_emoji[stock_market[stock.market_id]]+' `'+stock.code+'`'+' '+stock.name for stock in stock_list]), reply_markup=keyboard_markup, parse_mode=ParseMode.MARKDOWN) 
-        # await message.reply_photo("AgACAgUAAxkBAAIDo2ATM9WT3dUW46It5rOxnlK_bNyrAAJ4rDEbUSyYVJ8XxhWXhidYOi0xb3QAAwEAAwIAA20AA86cAQABHgQ", caption="Find multiple results", reply_markup=keyboard_markup)
-
-        # await message.reply_photo("AgACAgUAAxkBAAIDxmATQbw5mLxlweLwCYpRAyx04Y8YAALzqjEbgr-YVCjTJJaDtw2qd5WDb3QAAwEAAwIAA20AAzzlAQABHgQ", caption="Find multiple results", reply_markup=keyboard_markup)
-
-        await message.reply_photo("AgACAgUAAxkBAAIDymATQjsOZbFGxGqQMKt-Q_MUyUXdAAL1qjEbgr-YVC1IVvhlQFtLfoeybnQAAwEAAwIAA20AA47jAQABHgQ", caption="Find multiple results", reply_markup=keyboard_markup)
+        await message.reply_photo("AgACAgUAAxkBAAIDymATQjsOZbFGxGqQMKt-Q_MUyUXdAAL1qjEbgr-YVC1IVvhlQFtLfoeybnQAAwEAAwIAA20AA47jAQABHgQ", 
+                                  caption="Find multiple results", reply_markup=keyboard_markup)
 
 @dp.callback_query_handler(lambda cb: '/kline' in cb.data)
-@dp.callback_query_handler(text='exit')
+@dp.callback_query_handler(text='exit') #TODO need expection on multi-user behavior?
 async def inline_kline_answer_callback_handler(query):
     logging.info(f'{query.inline_message_id}: {query.data}')
     if query.data == 'exit':
@@ -101,39 +93,31 @@ async def inline_kline_answer_callback_handler(query):
         return 1
     stock_list = stock_query(keyword=query.data.split()[1])
     logging.info(f'query result:{stock_list}')
-    time_given = False # a dirty fix for stock_mix keyline
     stock = stock_list[0]
     try:
-        days_interval = int(query.data.split()[2])
-        time_begin, time_end = get_time_range(days_interval)
+        days_interval = query.data.split()[2]
     except IndexError:
         time_begin, time_end = get_time_range()
         macd = True
     else:
-        time_given = True
-        macd = (days_interval >= 100)
+        time_begin, time_end = get_time_range(days_interval)
+        macd = (int(days_interval) >= 100)
     buf = io.BytesIO()
     if type(stock) == Stock_mix:
         time_mix_created = stock.create_time.strftime("%Y%m%d")
-        if not time_given:
+        if days_interval == '':
             time_begin = time_mix_created
             macd = False
-        stock_data, _ = mix_data_collector(stock, time_begin=time_begin, time_end=time_end, 
-                                           time_ref=time_mix_created)
-        plot_kline(stock_data=stock_data, 
-                   title=f'kline of {stock.code}',
-                   plot_type='line',
-                   volume=False, 
-                   macd=macd, 
-                   output=buf)
+        stock_data, _ = mix_data_collector(stock, time_begin=time_begin, 
+                                           time_end=time_end, time_ref=time_mix_created)
+        plot_kline(stock_data=stock_data, title=f'kline of {stock.code}',
+                   plot_type='line', volume=False, macd=macd, output=buf)
     else:        
         plot_kline(stock_data=data_collector(stock, time_begin, time_end), 
                    title=f'kline of {stock.code}',
-                   macd=macd, 
-                   output=buf)
+                   macd=macd, output=buf)
     buf.seek(0)
     await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=stock.code+' '+stock.name))
-    # await query.message.edit_caption(stock.code+' '+stock.name)
  
 @dp.message_handler(commands=['define'])
 async def define(message):
@@ -173,7 +157,8 @@ async def check(message):
         buf = io.BytesIO()
         time_now = datetime.datetime.utcnow().strftime("%Y%m%d %H:%M:%S")
         stock_data, matrix_close_price = mix_data_collector(stock_mix, time_begin=time_begin)
-        profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, date_ref=stock_mix.create_time)
+        profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, 
+                                                                      date_ref=stock_mix.create_time)
         if '-d' in message.text or '--detail' in message.text:
             plot_stock_profit(stock_mix, stock_profit_ratio, 
                               title=f'{stock_mix.name} {time_begin}-{time_now} (UTC)',
@@ -204,7 +189,8 @@ async def now(message):
         time_now = datetime.datetime.utcnow().strftime("%Y%m%d %H:%M:%S")
         datetime_yesterday = (datetime.datetime.utcnow() - datetime.timedelta(days=1)).strftime("%Y%m%d")
         stock_data, matrix_close_price = mix_data_collector(stock_mix, time_begin=datetime_yesterday)
-        profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, date_ref=datetime_yesterday)
+        profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, 
+                                                                      date_ref=datetime_yesterday)
         plot_stock_profit(stock_mix, stock_profit_ratio, 
                           title=f'{stock_mix.name} {datetime_yesterday}-{time_now} (UTC)', 
                           output=buf)
@@ -219,24 +205,6 @@ async def now(message):
 # @dp.message_handler(content_types=['photo'])
 # async def echo(message):
 #     await message.answer(str(message.photo[0].file_id))
-
-#@dp.message_handler()
-#TODO inline mode to be developed
-
-# @dp.inline_handler()
-# async def inline_echo(inline_query: types.InlineQuery):
-#     text = inline_query.query or "echo"
-#     results = []
-# 
-#     code = inline_query.query
-# 
-#     results.append(
-#         types.InlineQueryResultPhoto(
-#             id=1, photo_url=mainURL, title=text, thumb_url=mainURL
-#         )
-#     )
-# 
-#     await bot.answer_inline_query(inline_query.id, results=results, cache_time=1)
 
 if __name__ == '__main__':
     matplotlib.rcParams['font.family'] = ['Source Han Sans']

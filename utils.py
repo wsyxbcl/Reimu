@@ -351,21 +351,23 @@ def gen_stock_mix(mix_code, mix_name, stock_names, holding_ratios):
     return stock_mix
 
 if __name__ == '__main__':
-    x = data_collector(stock_query('000300', echo=True)[0], time_begin='20210101')
-    plot_kline(x, title='test_kline', plot_type='candle', volume=True, macd=True)
+    # kline plot test
+    # x = data_collector(stock_query('000300', echo=True)[0], time_begin='20210101')
+    # plot_kline(x, title='test_kline', plot_type='candle', volume=True, macd=True)
 
+    # Query test
     # _query_test(_test_stock_code)
-    # enl_stock_name = ["隆基股份", "通威股份", "宁德时代", "亿纬锂能", "药明康德", 
-    #                   "华大基因", "中船防务", "航发动力", "海康威视", "金山办公", 
-    #                   "石头科技", "恒力石化", "三一重工", "恒立液压", "上机数控", 
-    #                   "金域医学", "英科医疗", "安井食品", "高德红外", "比亚迪", 
-    #                   "东方财富"]
+
+    # Stock_mix test
+    # enl_stock_name = [] # a list of query keywords (#TODO check: result must be unique)
     # enl_stock_ratio = [1 / len(enl_stock_name)] * len(enl_stock_name)
-    # enl_stock_mix = gen_stock_mix(mix_code='enl001', mix_name="enl stock mix", stock_names=enl_stock_name, holding_ratios=enl_stock_ratio)
+    # enl_stock_mix = gen_stock_mix(mix_code='enl001', mix_name="enl stock mix", 
+    #                               stock_names=enl_stock_name, holding_ratios=enl_stock_ratio)
+
+    # Stock_mix object Loading & Pie plot, return rate analysis test
 
     # enl_stock_mix = stock_query('enl001')[0]
     # enl_stock_mix.draw()
-    # print(enl_stock_mix)
     # mix_data, matrix_close_price = mix_data_collector(enl_stock_mix)
     # datetime_yesterday = datetime.datetime.utcnow() - datetime.timedelta(days=1)
     # profit_ratio, stock_profit_ratio = enl_stock_mix.get_profit_ratio(mix_data, matrix_close_price, date_ref=datetime_yesterday)
