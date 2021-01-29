@@ -100,7 +100,7 @@ async def inline_kline_answer_callback_handler(query):
         time_begin, time_end = get_time_range()
         macd = True
     else:
-        time_begin, time_end = get_time_range(days_interval)
+        time_begin, time_end = get_time_range(int(days_interval))
         macd = (int(days_interval) >= 100)
     buf = io.BytesIO()
     if type(stock) == Stock_mix:
