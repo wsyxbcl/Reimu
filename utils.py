@@ -87,6 +87,7 @@ class Stock_mix:
         labels = [stock.name for stock in self.stock_list]
         ratios = [ratio for ratio in self.holding_ratio]
         colors = plt.cm.get_cmap('tab20c').colors
+        matplotlib.rcParams['font.family'] = ['Source Han Sans']
         fig1, ax1 = plt.subplots()
         ax1.pie(ratios, colors=colors, labels=labels, autopct='%1.1f%%', startangle=90) #draw circle
         centre_circle = plt.Circle((0, 0), 0.70, fc='white')
@@ -191,7 +192,7 @@ def stock_query(keyword, echo=False):
     try:
         mes_dict = eval(result)
     except NameError as e:
-        raise QueryError("Can't find keyword") from e
+        raise QueryError(f"Can't find keyword {keyword}") from e
     query_result = mes_dict['QuotationCodeTable']['Data']
 
     # Filter result
