@@ -350,10 +350,10 @@ def gen_stock_mix(mix_code, mix_name, stock_names, holding_ratios):
     print(stock_mix)
     return stock_mix
 
-if __name__ == '__main__':
+def main():
     # kline plot test
-    # x = data_collector(stock_query('000300', echo=True)[0], time_begin='20210101')
-    # plot_kline(x, title='test_kline', plot_type='candle', volume=True, macd=True)
+    x = data_collector(stock_query('000300', echo=True)[0], time_begin='20210101')
+    plot_kline(x, title='test_kline', plot_type='candle', volume=True, macd=True)
 
     # Query test
     # _query_test(_test_stock_code)
@@ -366,14 +366,17 @@ if __name__ == '__main__':
 
     # Stock_mix object Loading & Pie plot, return rate analysis test
 
-    # enl_stock_mix = stock_query('enl001')[0]
-    # enl_stock_mix.draw()
-    # mix_data, matrix_close_price = mix_data_collector(enl_stock_mix)
-    # datetime_yesterday = datetime.datetime.utcnow() - datetime.timedelta(days=1)
-    # profit_ratio, stock_profit_ratio = enl_stock_mix.get_profit_ratio(mix_data, matrix_close_price, date_ref=datetime_yesterday)
-    # print(profit_ratio)
-    # print(stock_profit_ratio)
-    # plot_kline(mix_data, title=enl_stock_mix.name, plot_type='line', volume=False)
-    # matplotlib.rcParams['font.family'] = ['Source Han Sans']
-    # plot_profitline(mix_data, profit_ratio)
-    # plot_stock_profit(enl_stock_mix, stock_profit_ratio)
+    enl_stock_mix = stock_query('enl001')[0]
+    enl_stock_mix.draw()
+    mix_data, matrix_close_price = mix_data_collector(enl_stock_mix)
+    datetime_yesterday = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+    profit_ratio, stock_profit_ratio = enl_stock_mix.get_profit_ratio(mix_data, matrix_close_price, date_ref=datetime_yesterday)
+    print(profit_ratio)
+    print(stock_profit_ratio)
+    plot_kline(mix_data, title=enl_stock_mix.name, plot_type='line', volume=False)
+    matplotlib.rcParams['font.family'] = ['Source Han Sans']
+    plot_profitline(mix_data, profit_ratio)
+    plot_stock_profit(enl_stock_mix, stock_profit_ratio)
+
+if __name__ == '__main__':
+    main()
