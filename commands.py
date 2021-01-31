@@ -52,7 +52,7 @@ def argparse_status(message):
     Plot return rate of COMBINATION_CODE since created
 
     Options:
-        -d    detailed mode, plot return rates of all stocks in combination
+        -d    detailed mode, plot return rates of all stocks in portfolio
         -h    show help message
     """
     command = message.split(' ')
@@ -66,7 +66,7 @@ def argparse_now(message):
     """
     Usage: /now [OPTION] STOCK_KEYWORD
        or: /now [OPTION] COMBINATION_CODE
-    Get real-time chart for STOCK_KEYWORD or today's return rate for a combination
+    Get real-time chart for STOCK_KEYWORD or today's return rate for a portfolio
 
     Options:
         -h    display help message
