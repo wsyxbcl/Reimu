@@ -48,8 +48,8 @@ def argparse_define(message):
 
 def argparse_status(message):
     """
-    Usage: /status [OPTION] COMBINATION_CODE
-    Plot return rate of COMBINATION_CODE since created
+    Usage: /status [OPTION] PORTFOLIO_CODE
+    Plot return rate of PORTFOLIO_CODE since created
 
     Options:
         -d    detailed mode, plot return rates of all stocks in portfolio
@@ -64,13 +64,13 @@ def argparse_status(message):
 
 def argparse_now(message):
     """
-    Usage: /now [OPTION] STOCK_KEYWORD
-       or: /now [OPTION] COMBINATION_CODE
-    Get real-time chart for STOCK_KEYWORD or today's return rate for a portfolio
+    Usage: /now [OPTION] PORTFOLIO_CODE
+    Plot today's return rate for a portfolio
 
     Options:
         -h    display help message
     """
+    #TODO Get real-time chart for STOCK_KEYWORD, /now [OPTION] STOCK_KEYWORD
     command = message.split(' ')
     parser = argparse.ArgumentParser(add_help=False, exit_on_error=False)
     parser.add_argument('-h', dest='help', action='store_true')
