@@ -5,10 +5,10 @@ import argparse
 def argparse_kline(message):
     """
     Usage: /kline [OPTION] STOCK_KEYWORD
-    Do query on STOCK_KEYWORD and plot kline based on result
+    Do a query on STOCK_KEYWORD and plot kline based on the result
 
     Options:
-        -d <days>   set the time range for kline plot, unit: days
+        -d <days>   set the time range for kline plotting, unit: days
         -h          show help message
         -e <md5>    md5 match(md5), NOT FOR USERS
     Examples:
@@ -27,11 +27,11 @@ def argparse_kline(message):
 def argparse_define(message):
     """
     Usage: /define [OPTION] CODE NAME -l [STOCK_KEYWORD [STOCK_KEYWORD ...]]
-    Define a new portfolio named NAME with CODE, by combining given STOCK_KEYWORD, the default ratios of holding values are equal. 
+    Define a new portfolio named NAME with CODE, by combining the given STOCK_KEYWORD, the default ratios of holding values are equal. 
 
     Options:
-        -w [weight [weight ...]]    customize weights of each stock, 
-        -f                          force rewrite existed portfolio
+        -w [weight [weight ...]]    customize the weights of each stock, 
+        -f                          force rewrite the existing portfolio
         -h                          show help message
 
     Examples:
@@ -51,10 +51,10 @@ def argparse_define(message):
 def argparse_status(message):
     """
     Usage: /status [OPTION] PORTFOLIO_CODE
-    Plot return rate of PORTFOLIO_CODE since created
+    Plot the return rate of PORTFOLIO_CODE since created
 
     Options:
-        -d    detailed mode, plot return rates of all stocks in portfolio
+        -d    detailed mode; plot the return rates of all stocks in the portfolio
         -h    show help message
     """
     command = message.split(' ')
@@ -68,7 +68,7 @@ def argparse_status(message):
 def argparse_now(message):
     """
     Usage: /now [OPTION] PORTFOLIO_CODE
-    Plot today's return rate for a portfolio
+    Plot today's return rate for a portfolio (currently valid for trading days only)
 
     Options:
         -h    display help message
