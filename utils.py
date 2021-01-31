@@ -25,19 +25,20 @@ eastmoney_base = "http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={ma
 # "沪市（主板、科创板、基金）、深市（主板、中小板、创业板、基金）", guided by Maple
 # http://www.szse.cn/
 # http://www.sse.com.cn/
-_test_stock_code = ['600000', '688111', '510010', '000001', '002001', '300001', '159001']
-
+_test_stock_code_CN = ['600000', '688111', '510010', '000001', '002001', '300001', '159001']
+_test_stock_HK = ["腾讯控股", "美团", "小米集团", "舜宇光学科技", "华虹半导体", "思摩尔国际", "海底捞"]
 # For filtering eastmoney searchapi
 # "TypeUS" seems to be a strong factor, but with uncertain meaning 
 # MktNum: MarketName
-stock_market =  {'0': "SZ", '1': "SH", '105': "US", '106': "US", '107': "US", '156': "US"} #TODO figure out US market
+stock_market =  {'0': "SZ", '1': "SH", '105': "US", '106': "US", '107': "US", '156': "US", '116': "HK"} #TODO figure out US market
 
 # SecurityType: SecurityTypeName
 stock_type = {'1': "沪A", 
               '25': "科创板", 
               '2': "深A", 
               '8': "基金", 
-              '5': "指数"}
+              '5': "指数",
+              '19': "港股"}
 
 # kline color style
 mc = {'candle': {'up': '#fe3032', 'down': '#00b060'},
@@ -192,16 +193,18 @@ def stock_query(keyword, stock_md5=None, echo=False):
     except NameError as e:
         raise QueryError(f"Can't find keyword {keyword}") from e
     query_result = mes_dict['QuotationCodeTable']['Data']
+    # if echo:
+    #     print(query_result)
     stock_list = [Stock(code=x['Code'], name=x['Name'], market_id=x['MktNum'], type_id=x['SecurityType']) 
                   for x in query_result if x['MktNum'] in stock_market and \
                                            (x['SecurityType'] in stock_type or x['Classify'] == "UsStock") and \
                                            x["SecurityTypeName"] != "曾用"]
     if stock_md5:
         stock_list = [stock for stock in stock_list if stock.md5 == stock_md5]
-    if not stock_list:
-        raise QueryError(f"Empty stock_list from \n{query_result}")
     if echo:
         print(stock_list)
+    if not stock_list:
+        raise QueryError(f"Empty stock_list from \n{query_result}")
     return stock_list
 
 def data_collector(stock, time_begin='19900101', time_end='20991231'):
@@ -359,12 +362,12 @@ def gen_stock_mix(mix_code, mix_name, stock_names, holding_ratios):
 
 def main():
     # kline plot test
-    x = data_collector(stock_query('000300', echo=True)[0], time_begin='20210101')
-    plot_kline(x, title='test_kline', plot_type='candle', volume=True, macd=True)
+    # x = data_collector(stock_query('000300', echo=True)[0], time_begin='20210101')
+    # plot_kline(x, title='test_kline', plot_type='candle', volume=True, macd=True)
 
     # Query test
-    # _query_test(_test_stock_code)
-
+    # _query_test(_test_stock_code_CN)
+    _query_test(_test_stock_HK)
     # Stock_mix test
     # enl_stock_name = [] # a list of query keywords (#TODO check: result must be unique)
     # enl_stock_ratio = [1 / len(enl_stock_name)] * len(enl_stock_name)
@@ -373,17 +376,17 @@ def main():
 
     # Stock_mix object Loading & Pie plot, return rate analysis test
 
-    enl_stock_mix = stock_query('enl001')[0]
-    enl_stock_mix.draw()
-    mix_data, matrix_close_price = mix_data_collector(enl_stock_mix)
-    datetime_yesterday = datetime.datetime.utcnow() - datetime.timedelta(days=1)
-    profit_ratio, stock_profit_ratio = enl_stock_mix.get_profit_ratio(mix_data, matrix_close_price, date_ref=datetime_yesterday)
-    print(profit_ratio)
-    print(stock_profit_ratio)
-    plot_kline(mix_data, title=enl_stock_mix.name, plot_type='line', volume=False)
-    matplotlib.rcParams['font.family'] = ['Source Han Sans']
-    plot_profitline(mix_data, profit_ratio)
-    plot_stock_profit(enl_stock_mix, stock_profit_ratio)
+    # enl_stock_mix = stock_query('enl001')[0]
+    # enl_stock_mix.draw()
+    # mix_data, matrix_close_price = mix_data_collector(enl_stock_mix)
+    # datetime_yesterday = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+    # profit_ratio, stock_profit_ratio = enl_stock_mix.get_profit_ratio(mix_data, matrix_close_price, date_ref=datetime_yesterday)
+    # print(profit_ratio)
+    # print(stock_profit_ratio)
+    # plot_kline(mix_data, title=enl_stock_mix.name, plot_type='line', volume=False)
+    # matplotlib.rcParams['font.family'] = ['Source Han Sans']
+    # plot_profitline(mix_data, profit_ratio)
+    # plot_stock_profit(enl_stock_mix, stock_profit_ratio)
 
 if __name__ == '__main__':
     main()
