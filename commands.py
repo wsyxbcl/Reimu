@@ -26,7 +26,7 @@ def argparse_kline(message):
 def argparse_define(message):
     """
     Usage: /define [OPTION] CODE NAME -l [STOCK_KEYWORD [STOCK_KEYWORD ...]]
-    Define a new portfolio named NAME with CODE, by combining given STOCK_KEYWORD, the default ratio of holding values are equal. 
+    Define a new portfolio named NAME with CODE, by combining given STOCK_KEYWORD, the default ratios of holding values are equal. 
 
     Options:
         -w [weight [weight ...]]    customize weights of each stock, 
@@ -34,8 +34,8 @@ def argparse_define(message):
         -h                          show help message
 
     Examples:
-        /define comb001 AMD_INTC_NVDA(EQ) -l AMD intel NVIDIA
-        /define comb002 AMD_INTC_NVDA(CM) -l AMD intel NVIDIA -w 1 2 3
+        /define comb001 AMDINTCNVDA -l AMD intel NVDA
+        /define comb002 AMDINTCNVDA -l AMD intel NVDA -w 1 2 3
     """
     command = message.split(' ')
     parser = argparse.ArgumentParser(add_help=False, exit_on_error=False)
