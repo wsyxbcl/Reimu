@@ -11,7 +11,7 @@ def argparse_kline(message):
     Options:
         -d <days>   set the time range for kline plot, unit: days
         -h          show help message
-        -e          for exact match, user won't use this
+        -e          for exact match(md5), not for users, DO NOT USE IT
     Examples:
         /kline AMD
         /kline comb001 -d 365
@@ -40,11 +40,11 @@ def argparse_define(message):
     """
     command = message.split(' ')
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument('-d', dest='detail', action='store_true')
     parser.add_argument('-f', dest='force', action='store_true')
     parser.add_argument('-h', dest='help', action='store_true')
-    parser.add_argument('stock_list', nargs='*')
+    parser.add_argument('-l', dest='stock_list', nargs='*')
     parser.add_argument('-w', dest='weights', nargs='*')
+    parser.add_argument('code_and_name', nargs=2)
     return parser.parse_args(command[1:])
 
 def argparse_status(message):

@@ -11,10 +11,15 @@ from aiogram.types import InlineQuery, ParseMode, \
 import matplotlib.font_manager
 
 from utils import *
+from commands import argparse_kline, argparse_define, argparse_status, argparse_today
 
 #TODO complete logging
 #TODO /compare
 #TODO /realtime
+
+_market_emoji =  {"SZ": '🇨🇳', "SH": '🇨🇳', "US": '🇺🇸', "HK": '🇭🇰'}
+# file id for the picture, i.e. placeholder of inline keyboard
+_file_id_inline = "AgACAgUAAxkBAAIDymATQjsOZbFGxGqQMKt-Q_MUyUXdAAL1qjEbgr-YVC1IVvhlQFtLfoeybnQAAwEAAwIAA20AA47jAQABHgQ" 
 
 config = toml.load("reimu.toml")
 
@@ -27,12 +32,12 @@ logging.basicConfig(filename="./hakurei_bot.log",
 bot = Bot(token=config["telegram"]["token"])
 dp = Dispatcher(bot)
 
-def get_time_range(days_interval=120):
+def get_time_range(day_interval=120):
     """
-    return ({days_interval} days ago, today + 1)
+    return ({day_interval} days ago, today + 1)
     """
     time_end = datetime.datetime.utcnow() + datetime.timedelta(days=1)
-    time_begin = time_end - datetime.timedelta(days=days_interval)
+    time_begin = time_end - datetime.timedelta(days=day_interval)
     return (time_begin.strftime("%Y%m%d"), time_end.strftime("%Y%m%d"))
 
 @dp.message_handler(commands=['start', 'help'])
@@ -42,25 +47,26 @@ async def send_welcome(message):
 @dp.message_handler(commands=['kline'])
 async def kline(message):
     logging.info(f'{message.chat.id}: {message.text}')
-    stock_list = stock_query(keyword=message.text.split()[1])
+    args = argparse_kline(message.text)
+    if args.help:
+        await message.reply(argparse_status.__doc__)
+        return 0
+    stock_list = stock_query(keyword=args.keyword, exact_match=args.exact)
     logging.info(f'query result:{stock_list}')
     # Get time_range from user input
-    try:
-        days_interval = message.text.split()[2]
-    except IndexError:
-        time_begin, time_end = get_time_range()
-        days_interval = ''
-        macd = True
+    if args.days:
+        time_begin, time_end = get_time_range(int(args.days))
+        macd = (int(args.days) >= 100)
     else:
-        time_begin, time_end = get_time_range(int(days_interval))
-        macd = (int(days_interval) >= 100)
+        time_begin, time_end = get_time_range()
+        macd = True
 
     if len(stock_list) == 1:
         stock = stock_list[0]
         buf = io.BytesIO()
         if type(stock) == Stock_mix:
             time_mix_created = stock.create_time.strftime("%Y%m%d")
-            if days_interval == '':
+            if args.days is None:
                 time_begin = time_mix_created
                 macd = False
             stock_data, _ = mix_data_collector(stock, time_begin=time_begin, time_end=time_end, 
@@ -69,20 +75,23 @@ async def kline(message):
                        plot_type='line', volume=False, macd=macd, output=buf)
         else:        
             plot_kline(stock_data=data_collector(stock, time_begin, time_end), 
-                       title=f'kline of {stock.code}',
-                       macd=macd, output=buf)
+                       title=f'kline of {stock.code}', macd=macd, output=buf)
         buf.seek(0)
-        await message.reply_photo(buf, caption=stock.code+' '+stock.name, reply_markup=types.ReplyKeyboardRemove())
+        if args.exact:
+            # Not open to user input, can only result from inline keyboard callback
+            await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=stock.code+' '+stock.name))
+        else:
+            await message.reply_photo(buf, caption=stock.code+' '+stock.name, reply_markup=types.ReplyKeyboardRemove())
     else:
+        # get user's selection from inline keyboard
         keyboard_markup = types.InlineKeyboardMarkup()
         for stock in stock_list:
-            stock_emoji = market_emoji[stock_market[stock.market_id]]
+            stock_emoji = _market_emoji[stock.market]
             keyboard_markup.row(types.InlineKeyboardButton(' '.join([stock_emoji, stock.code, stock.name]), 
-                                callback_data='/kline '+stock.code+'('+stock.name+' '+days_interval))
+                                callback_data=' '.join(['/kline', stock.md5, '-d', args.days, '-e']))
         # add exit button
         keyboard_markup.row(types.InlineKeyboardButton('exit', callback_data='exit'))
-        await message.reply_photo("AgACAgUAAxkBAAIDymATQjsOZbFGxGqQMKt-Q_MUyUXdAAL1qjEbgr-YVC1IVvhlQFtLfoeybnQAAwEAAwIAA20AA47jAQABHgQ", 
-                                  caption="Find multiple results", reply_markup=keyboard_markup)
+        await message.reply_photo(_file_id_inline, caption="Find multiple results", reply_markup=keyboard_markup)
 
 @dp.callback_query_handler(lambda cb: '/kline' in cb.data)
 @dp.callback_query_handler(text='exit') #TODO need expection on multi-user behavior?
@@ -91,44 +100,21 @@ async def inline_kline_answer_callback_handler(query):
     if query.data == 'exit':
         await query.message.delete()
         return 1
-    stock_list = stock_query(keyword=query.data.split()[1])
-    logging.info(f'query result:{stock_list}')
-    stock = stock_list[0]
-    try:
-        days_interval = query.data.split()[2]
-    except IndexError:
-        time_begin, time_end = get_time_range()
-        macd = True
-    else:
-        time_begin, time_end = get_time_range(int(days_interval))
-        macd = (int(days_interval) >= 100)
-    buf = io.BytesIO()
-    if type(stock) == Stock_mix:
-        time_mix_created = stock.create_time.strftime("%Y%m%d")
-        if days_interval == '':
-            time_begin = time_mix_created
-            macd = False
-        stock_data, _ = mix_data_collector(stock, time_begin=time_begin, 
-                                           time_end=time_end, time_ref=time_mix_created)
-        plot_kline(stock_data=stock_data, title=f'kline of {stock.code}',
-                   plot_type='line', volume=False, macd=macd, output=buf)
-    else:        
-        plot_kline(stock_data=data_collector(stock, time_begin, time_end), 
-                   title=f'kline of {stock.code}',
-                   macd=macd, output=buf)
-    buf.seek(0)
-    await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=stock.code+' '+stock.name))
- 
+    await kline(query.data)
+
 @dp.message_handler(commands=['define'])
 async def define(message):
-    #TODO consider argparser or inline keyboard
+    args = argparse_define(message.text)
+    if args.help:
+        await message.reply(argparse_status.__doc__)
+        return 0
     logging.info(f'{message.chat.id}: {message.text}')
-    code = message.text.split()[1]
-    name = message.text.split()[2]
-    stock_names = message.text[message.text.find("(")+1:message.text.find(")")]
-    stock_list = [stock_name for stock_name in stock_names.split()]
-    if message.text.split()[-1] == 'equal':
+    (code, name) = args.code_and_name
+    stock_list = args.stock_list
+    if args.weights is None:
         holding_ratio = [1 / len(stock_list)] * len(stock_list)
+    else:
+        holding_ratio = [float(w) for w args.weights]
     stock_mix = gen_stock_mix(code, name, stock_names=stock_list, holding_ratios=holding_ratio)
     stock_mix.save()
     logging.info(f'creating stock mix:{stock_mix}')
@@ -137,29 +123,26 @@ async def define(message):
     buf.seek(0)
     await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+" created")
 
-@dp.message_handler(commands=['check'])
-async def check(message):
+@dp.message_handler(commands=['status'])
+async def status(message):
     """
-    check and plot the profit ratio of given stock mix
+    plot the return rate of given stock mix
     """
     logging.info(f'{message.chat.id}: {message.text}')
-    #TODO achieve argparser-like behavior here
-    stock_list = stock_query(keyword=message.text.split()[1])
+    args = argparse_status(message.text)
+    if args.help:
+        await message.reply(argparse_status.__doc__)
+        return 0
+    stock_list = stock_query(keyword=args.stock_mix_code)
     logging.info(f'query result:{stock_list}')
     if len(stock_list) == 1 and type(stock_mix := stock_list[0]) is Stock_mix:
-        if '-d' in message.text or '--detail' in message.text:
-            time_begin = stock_mix.create_time.strftime("%Y%m%d")
-        else:
-            try:
-                time_begin, _ = get_time_range(int(message.text.split()[2]))
-            except IndexError:
-                time_begin = stock_mix.create_time.strftime("%Y%m%d")
+        time_begin = stock_mix.create_time.strftime("%Y%m%d")
         buf = io.BytesIO()
         time_now = datetime.datetime.utcnow().strftime("%Y%m%d %H:%M:%S")
         stock_data, matrix_close_price = mix_data_collector(stock_mix, time_begin=time_begin)
         profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, 
                                                                       date_ref=stock_mix.create_time)
-        if '-d' in message.text or '--detail' in message.text:
+        if args.detail:
             plot_stock_profit(stock_mix, stock_profit_ratio, 
                               title=f'{stock_mix.name} {time_begin}-{time_now} (UTC)',
                               output=buf)
@@ -173,12 +156,16 @@ async def check(message):
     else:
         pass
         #TODO if there will be stock_mix query
+        #TODO if there will be company status
 
-@dp.message_handler(commands=['now'])
-async def now(message):
+@dp.message_handler(commands=['today'])
+async def today(message):
     logging.info(f'{message.chat.id}: {message.text}')
-    #TODO achieve argparser-like behavior here
-    stock_list = stock_query(keyword=message.text.split()[1])
+    args = argparse_today(message.text)
+    if args.help:
+        await message.reply(argparse_status.__doc__)
+        return 0
+    stock_list = stock_query(keyword=args.stock)
     logging.info(f'query result:{stock_list}')
     if len(stock_list) == 1 and type(stock_mix := stock_list[0]) is Stock_mix:
         try:
@@ -199,6 +186,7 @@ async def now(message):
                                                "\nToday's return rate: {:.2%}".format(profit_ratio[-1]))
     else:
         pass
+        #TODO if there will be stock_mix query
         #TODO combined with dayline
 
 # To get photo file_id

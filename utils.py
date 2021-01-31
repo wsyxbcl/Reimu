@@ -1,4 +1,5 @@
 import datetime
+import hashlib
 import os
 import pickle
 import re
@@ -30,7 +31,7 @@ _test_stock_code = ['600000', '688111', '510010', '000001', '002001', '300001', 
 # "TypeUS" seems to be a strong factor, but with uncertain meaning 
 # MktNum: MarketName
 stock_market =  {'0': "SZ", '1': "SH", '105': "US", '106': "US", '107': "US", '156': "US"} #TODO figure out US market
-market_emoji =  {"SZ": '🇨🇳', "SH": '🇨🇳', "US": '🇺🇸', "HK": '🇭🇰'}
+
 # SecurityType: SecurityTypeName
 stock_type = {'1': "沪A", 
               '25': "科创板", 
@@ -60,12 +61,19 @@ class Stock:
         self.name = name
         self.market_id = market_id
         self.type_id = type_id
+
     @property
-    def stock_market(self):
+    def market(self):
         return self.stock_market[market_id]
     @property
     def stock_type(self):
         return self.stock_type[type_id]
+    @property
+    def md5(self):
+        m = hashlib.md5()
+        s = ''.join(self.code, self.name, self.market_id, self.type_id)
+        m.update(s.encode())
+        return m.digest()
 
     def __repr__(self):
         return "<Stock code={0.code!r} name={0.name!r} market_id={0.market_id!r} type_id={0.type_id!r}>".format(self)
@@ -150,22 +158,12 @@ def _query_test(stock_list):
 
 #TODO minus plot -> /compare command
 #TODO real time price -> /realtime command
-def stock_query(keyword, echo=False):
+def stock_query(keyword, exact_match=False, echo=False):
     """
     borrowed from https://github.com/pengnanxiaomeimei/stock_data_analysis/
     Not ideal but works.
     """
-    search_keyword = keyword.split('(')[0]
-    # Advanced search, to deal with duplicated query results
-    # Only stock_name / stock_code is supported now
-    # i.e. stock_name(stock_code or stock_code(stock_name
-    try:
-        advanced_search_keyword = keyword.split('(')[1]
-        print(advanced_search_keyword)
-    except IndexError:
-        advanced_search_keyword = None
-
-    if (local_stock := search_keyword+'.pickle') in os.listdir(data_path):
+    if (local_stock := (keyword+'.pickle')) in os.listdir(data_path):
         #TODO do query instead of match
         with open(os.path.join(data_path, local_stock), 'rb') as f:
             local_stock = pickle.load(f)
@@ -179,7 +177,7 @@ def stock_query(keyword, echo=False):
     token = 'D43BF722C8E33BDC906FB84D85E326E8'
     time_stamp = int(round(time.time() * 1000))
     str_parameter = '?cb=' + cb_param_pre + str(time_stamp)
-    str_parameter += '&input=' + search_keyword
+    str_parameter += '&input=' + keyword
     str_parameter += '&token=' + token
     str_parameter += '&type=14' # for Securities entry
     str_parameter += '&count=5'
@@ -194,17 +192,17 @@ def stock_query(keyword, echo=False):
     except NameError as e:
         raise QueryError(f"Can't find keyword {keyword}") from e
     query_result = mes_dict['QuotationCodeTable']['Data']
-
+    stock_list = [Stock(code=x['Code'], name=x['Name'], market_id=x['MktNum'], type_id=x['SecurityType'])
+                  for x in query_result]
+    if exact_match:
+        stock_list = [stock in stock_list if stock.md5 == keyword]
     # Filter result
-    stock_list = [Stock(code=x['Code'], name=x['Name'], market_id=x['MktNum'], type_id=x['SecurityType']) 
-                  for x in query_result if x['MktNum'] in stock_market and \
-                                           (x['SecurityType'] in stock_type or x['Classify'] == "UsStock") and\
-                                           x["SecurityTypeName"] != "曾用"]
-    if advanced_search_keyword is not None:
-        stock_list = [x for x in stock_list if (x.name == advanced_search_keyword) or (x.code == advanced_search_keyword)] 
-        print(stock_list)
+    else:
+        stock_list = [stock in stock_list  if stock['MktNum'] in stock_market and \
+                                            (stock['SecurityType'] in stock_type or stock['Classify'] == "UsStock") and \
+                                            stock["SecurityTypeName"] != "曾用"]
     if not stock_list:
-        raise QueryError(f"Result not in A-SHARE\n{query_result}")
+        raise QueryError(f"Empty stock_list from \n{query_result}")
     if echo:
         print(stock_list)
     return stock_list
@@ -346,7 +344,7 @@ def gen_stock_mix(mix_code, mix_name, stock_names, holding_ratios):
         else:
             print("multiple query results on "+stock_name)
     stock_mix = Stock_mix(code=mix_code, name=mix_name, stock_list=stock_list, 
-                              holding_ratio=holding_ratios)
+                          holding_ratio=holding_ratios)
     stock_mix.save()
     print(stock_mix)
     return stock_mix
