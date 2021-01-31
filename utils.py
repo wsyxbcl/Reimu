@@ -64,16 +64,16 @@ class Stock:
 
     @property
     def market(self):
-        return self.stock_market[market_id]
+        return stock_market[self.market_id]
     @property
     def stock_type(self):
         return self.stock_type[type_id]
     @property
     def md5(self):
         m = hashlib.md5()
-        s = ''.join(self.code, self.name, self.market_id, self.type_id)
+        s = ''.join([self.code, self.name, self.market_id, self.type_id])
         m.update(s.encode())
-        return m.digest()
+        return m.hexdigest()
 
     def __repr__(self):
         return "<Stock code={0.code!r} name={0.name!r} market_id={0.market_id!r} type_id={0.type_id!r}>".format(self)
@@ -158,7 +158,7 @@ def _query_test(stock_list):
 
 #TODO minus plot -> /compare command
 #TODO real time price -> /realtime command
-def stock_query(keyword, exact_match=False, echo=False):
+def stock_query(keyword, stock_md5=None, echo=False):
     """
     borrowed from https://github.com/pengnanxiaomeimei/stock_data_analysis/
     Not ideal but works.
@@ -192,15 +192,12 @@ def stock_query(keyword, exact_match=False, echo=False):
     except NameError as e:
         raise QueryError(f"Can't find keyword {keyword}") from e
     query_result = mes_dict['QuotationCodeTable']['Data']
-    stock_list = [Stock(code=x['Code'], name=x['Name'], market_id=x['MktNum'], type_id=x['SecurityType'])
-                  for x in query_result]
-    if exact_match:
-        stock_list = [stock in stock_list if stock.md5 == keyword]
-    # Filter result
-    else:
-        stock_list = [stock in stock_list  if stock['MktNum'] in stock_market and \
-                                            (stock['SecurityType'] in stock_type or stock['Classify'] == "UsStock") and \
-                                            stock["SecurityTypeName"] != "曾用"]
+    stock_list = [Stock(code=x['Code'], name=x['Name'], market_id=x['MktNum'], type_id=x['SecurityType']) 
+                  for x in query_result if x['MktNum'] in stock_market and \
+                                           (x['SecurityType'] in stock_type or x['Classify'] == "UsStock") and \
+                                           x["SecurityTypeName"] != "曾用"]
+    if stock_md5:
+        stock_list = [stock for stock in stock_list if stock.md5 == stock_md5]
     if not stock_list:
         raise QueryError(f"Empty stock_list from \n{query_result}")
     if echo:

@@ -1,3 +1,4 @@
+import argparse
 import datetime
 import hashlib
 import io
@@ -6,12 +7,12 @@ import re
 import toml
 
 from aiogram import Bot, Dispatcher, executor, types
-from aiogram.types import InlineQuery, ParseMode, \
+from aiogram.types import InlineQuery, ParseMode, message, \
     InputTextMessageContent, InlineQueryResultPhoto
 import matplotlib.font_manager
 
 from utils import *
-from commands import argparse_kline, argparse_define, argparse_status, argparse_today
+from commands import argparse_kline, argparse_define, argparse_status, argparse_now
 
 #TODO complete logging
 #TODO /compare
@@ -45,19 +46,21 @@ async def send_welcome(message):
     await message.reply("Busy in stock trading, no time for talk") 
 
 @dp.message_handler(commands=['kline'])
-async def kline(message):
-    logging.info(f'{message.chat.id}: {message.text}')
+async def kline(message, query=None):
+    logging.info(f'{message.text}')
     args = argparse_kline(message.text)
     if args.help:
-        await message.reply(argparse_status.__doc__)
+        await message.reply(argparse_kline.__doc__)
         return 0
-    stock_list = stock_query(keyword=args.keyword, exact_match=args.exact)
+    stock_list = stock_query(keyword=args.keyword, stock_md5=args.md5)
     logging.info(f'query result:{stock_list}')
     # Get time_range from user input
     if args.days:
+        time_arg = '-d '+args.days
         time_begin, time_end = get_time_range(int(args.days))
         macd = (int(args.days) >= 100)
     else:
+        time_arg = None
         time_begin, time_end = get_time_range()
         macd = True
 
@@ -77,7 +80,7 @@ async def kline(message):
             plot_kline(stock_data=data_collector(stock, time_begin, time_end), 
                        title=f'kline of {stock.code}', macd=macd, output=buf)
         buf.seek(0)
-        if args.exact:
+        if args.md5:
             # Not open to user input, can only result from inline keyboard callback
             await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=stock.code+' '+stock.name))
         else:
@@ -88,7 +91,7 @@ async def kline(message):
         for stock in stock_list:
             stock_emoji = _market_emoji[stock.market]
             keyboard_markup.row(types.InlineKeyboardButton(' '.join([stock_emoji, stock.code, stock.name]), 
-                                callback_data=' '.join(['/kline', stock.md5, '-d', args.days, '-e']))
+                                callback_data=' '.join(filter(None, ['/kline', time_arg, '-e', stock.md5, args.keyword]))))
         # add exit button
         keyboard_markup.row(types.InlineKeyboardButton('exit', callback_data='exit'))
         await message.reply_photo(_file_id_inline, caption="Find multiple results", reply_markup=keyboard_markup)
@@ -100,21 +103,27 @@ async def inline_kline_answer_callback_handler(query):
     if query.data == 'exit':
         await query.message.delete()
         return 1
-    await kline(query.data)
+    await kline(message.Message(text=query.data), query=query)
 
 @dp.message_handler(commands=['define'])
 async def define(message):
-    args = argparse_define(message.text)
+    try:
+        args = argparse_define(message.text)
+    except argparse.ArgumentError:
+        pass 
     if args.help:
-        await message.reply(argparse_status.__doc__)
+        await message.reply(argparse_define.__doc__)
         return 0
     logging.info(f'{message.chat.id}: {message.text}')
-    (code, name) = args.code_and_name
+    try:
+        (code, name) = args.code_and_name
+    except ValueError:
+        raise #Wrong command received
     stock_list = args.stock_list
     if args.weights is None:
         holding_ratio = [1 / len(stock_list)] * len(stock_list)
     else:
-        holding_ratio = [float(w) for w args.weights]
+        holding_ratio = [float(w) for w in args.weights]
     stock_mix = gen_stock_mix(code, name, stock_names=stock_list, holding_ratios=holding_ratio)
     stock_mix.save()
     logging.info(f'creating stock mix:{stock_mix}')
@@ -158,12 +167,15 @@ async def status(message):
         #TODO if there will be stock_mix query
         #TODO if there will be company status
 
-@dp.message_handler(commands=['today'])
-async def today(message):
+@dp.message_handler(commands=['now'])
+async def now(message):
     logging.info(f'{message.chat.id}: {message.text}')
-    args = argparse_today(message.text)
+    try:
+        args = argparse_now(message.text)
+    except argparse.ArgumentError:
+        pass
     if args.help:
-        await message.reply(argparse_status.__doc__)
+        await message.reply(argparse_now.__doc__)
         return 0
     stock_list = stock_query(keyword=args.stock)
     logging.info(f'query result:{stock_list}')
