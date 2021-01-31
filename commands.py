@@ -21,7 +21,8 @@ def argparse_kline(message):
     parser.add_argument('-d', dest='days')
     parser.add_argument('-e', dest='md5')
     parser.add_argument('keyword', nargs='*')
-    return parser.parse_args(command[1:])
+    args, _ = parser.parse_known_args(command[1:])
+    return args
 
 def argparse_define(message):
     """
@@ -44,7 +45,8 @@ def argparse_define(message):
     parser.add_argument('-l', dest='stock_list', nargs='*')
     parser.add_argument('-w', dest='weights', nargs='*')
     parser.add_argument('code_and_name', nargs='*')
-    return parser.parse_args(command[1:])
+    args, _ = parser.parse_known_args(command[1:])
+    return args
 
 def argparse_status(message):
     """
@@ -60,7 +62,8 @@ def argparse_status(message):
     parser.add_argument('-d', dest='detail', action='store_true')
     parser.add_argument('-h', dest='help', action='store_true')
     parser.add_argument('stock_mix_code', nargs='?')
-    return parser.parse_args(command[1:])
+    args, _ = parser.parse_known_args(command[1:])
+    return args
 
 def argparse_now(message):
     """
@@ -75,5 +78,6 @@ def argparse_now(message):
     parser = argparse.ArgumentParser(add_help=False, exit_on_error=False)
     parser.add_argument('-h', dest='help', action='store_true')
     parser.add_argument('stock', nargs='?')
-    return parser.parse_args(command[1:])
+    args, _ = parser.parse_known_args(command[1:])
+    return args
 
