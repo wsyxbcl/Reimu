@@ -34,8 +34,8 @@ def argparse_define(message):
         -h                          show help message
 
     Examples:
-        /define comb001 AMDINTCNVDA -l AMD intel NVDA
-        /define comb002 AMDINTCNVDA -l AMD intel NVDA -w 1 2 3
+        /define p001 AIN -l AMD intel NVDA
+        /define p002 AIN -l AMD intel NVDA -w 1 2 3
     """
     command = message.split(' ')
     parser = argparse.ArgumentParser(add_help=False, exit_on_error=False)
