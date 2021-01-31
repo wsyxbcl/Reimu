@@ -26,11 +26,11 @@ def argparse_kline(message):
 def argparse_define(message):
     """
     Usage: /define [OPTION] CODE NAME -l [STOCK_KEYWORD [STOCK_KEYWORD ...]]
-    Define a new stock combination named NAME with CODE, by combining given STOCK_KEYWORD, the default ratio of holding values are equal. 
+    Define a new portfolio named NAME with CODE, by combining given STOCK_KEYWORD, the default ratio of holding values are equal. 
 
     Options:
         -w [weight [weight ...]]    customize weights of each stock, 
-        -f                          force rewrite existed stock combination
+        -f                          force rewrite existed portfolio
         -h                          show help message
 
     Examples:
