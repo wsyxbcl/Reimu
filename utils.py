@@ -228,8 +228,19 @@ def mix_data_collector(stock_mix, time_begin='20210101', time_end='20991231', ti
     #TODO use time_ref data when plot kline and 'value' as ylabel
     stock_data = [data_collector(stock, time_begin=time_begin, time_end=time_end) for stock in stock_mix.stock_list]
     # Checking whether the dates are consistent
+    # print(([len(stock['date'].values) for stock in stock_data]))
+    # print([stock.code for stock in stock_mix.stock_list])
     try:
-        matrix_date = np.array([np.array(stock['date']) for stock in stock_data])
+        matrix_date = np.array([stock['date'].values for stock in stock_data], dtype=object)
+        #TODO #17
+            # for i, date in enumerate(matrix_date):
+            #     if i == 0:
+            #         date_ref = date
+            #     else:
+            #         date_ref = matrix_date[i-1]
+            #     print(str(i)+' '+str(len(date)))
+            #     if len(date_ref) != (date):
+            #         print(set(date_ref) - set(date))
     except ValueError:
         # operands could not be broadcast together
         raise
