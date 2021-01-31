@@ -52,7 +52,10 @@ async def kline(message, query=None):
     if args.help:
         await message.reply(argparse_kline.__doc__)
         return 0
-    stock_list = stock_query(keyword=args.keyword, stock_md5=args.md5)
+    try:
+        stock_list = stock_query(keyword=args.keyword[0], stock_md5=args.md5)
+    except IndexError:
+        raise
     logging.info(f'query result:{stock_list}')
     # Get time_range from user input
     if args.days:
@@ -91,7 +94,7 @@ async def kline(message, query=None):
         for stock in stock_list:
             stock_emoji = _market_emoji[stock.market]
             keyboard_markup.row(types.InlineKeyboardButton(' '.join([stock_emoji, stock.code, stock.name]), 
-                                callback_data=' '.join(filter(None, ['/kline', time_arg, '-e', stock.md5, args.keyword]))))
+                                callback_data=' '.join(filter(None, ['/kline', time_arg, '-e', stock.md5, args.keyword[0]]))))
         # add exit button
         keyboard_markup.row(types.InlineKeyboardButton('exit', callback_data='exit'))
         await message.reply_photo(_file_id_inline, caption="Find multiple results", reply_markup=keyboard_markup)
