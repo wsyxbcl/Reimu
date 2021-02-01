@@ -388,7 +388,7 @@ def plot_stock_profit(stock_mix, stock_profit_ratio, title='', output=os.path.jo
     plt.gca().set(ylabel='Stock', xlabel='Return Rate')
     plt.yticks(stock_df.index, stock_df.name, fontsize=8)
     plt.title(title)
-    # plt.grid(linestyle='--', alpha=0.5)
+    plt.grid(linestyle='--', alpha=0.5)
     plt.savefig(output, dpi=300)
 
 def gen_stock_mix(mix_code, mix_name, stock_names, holding_ratios):
