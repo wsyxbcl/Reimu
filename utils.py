@@ -1,4 +1,5 @@
 import datetime
+from functools import wraps
 import hashlib
 import os
 import pickle
@@ -146,7 +147,7 @@ class Stock_mix:
                "\n".join("{!s}\t{:.1%}".format(stock, ratio)\
                for stock, ratio in zip(self.stock_list, self.holding_ratio))
 
-
+# Test utilities
 def _query_test(stock_list):
     """
     Leave test 
@@ -157,6 +158,17 @@ def _query_test(stock_list):
         except QueryError:
             print(f"QueryError on {stock}")
 
+def timing(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        func_return = func(*args, **kwargs)
+        end = time.perf_counter()
+        print("{}, runtime: {}".format(func.__name__, end - start))
+        return func_return
+    return wrapper
+
+# Data collecting utilities
 #TODO minus plot -> /compare command
 #TODO real time price -> /realtime command
 def stock_query(keyword, stock_md5=None, echo=False):
@@ -221,6 +233,7 @@ def data_collector(stock, time_begin='19900101', time_end='20991231'):
     stock_data["date"] = pd.to_datetime(stock_data["date"])
     return stock_data
 
+@timing
 def mix_data_collector(stock_mix, time_begin='20210101', time_end='20991231', time_ref=None):
     """
     Collecting and postprocessing for Stock_mix, where only close price are collected
@@ -265,6 +278,8 @@ def mix_data_collector(stock_mix, time_begin='20210101', time_end='20991231', ti
     mix_data['low'] = mix_data['open'] = mix_data['high'] = np.zeros(len(stock_data[0]['date']))
     return mix_data, matrix_close_price # to be used in profit analysis
 
+
+# Plot utilities
 def plot_kline(stock_data, title='', plot_type='candle', volume=True, macd=False, output=os.path.join(_test_path, 'kline.jpg')):
     #TODO analysis, e.g. MACD, RSI
     # issue#316 of mplfinance might be helpful
@@ -367,7 +382,7 @@ def main():
 
     # Query test
     # _query_test(_test_stock_code_CN)
-    _query_test(_test_stock_HK)
+    # _query_test(_test_stock_HK)
     # Stock_mix test
     # enl_stock_name = [] # a list of query keywords (#TODO check: result must be unique)
     # enl_stock_ratio = [1 / len(enl_stock_name)] * len(enl_stock_name)
@@ -376,9 +391,9 @@ def main():
 
     # Stock_mix object Loading & Pie plot, return rate analysis test
 
-    # enl_stock_mix = stock_query('enl001')[0]
+    enl_stock_mix = stock_query('enl001')[0]
     # enl_stock_mix.draw()
-    # mix_data, matrix_close_price = mix_data_collector(enl_stock_mix)
+    mix_data, matrix_close_price = mix_data_collector(enl_stock_mix)
     # datetime_yesterday = datetime.datetime.utcnow() - datetime.timedelta(days=1)
     # profit_ratio, stock_profit_ratio = enl_stock_mix.get_profit_ratio(mix_data, matrix_close_price, date_ref=datetime_yesterday)
     # print(profit_ratio)
