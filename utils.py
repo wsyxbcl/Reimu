@@ -121,18 +121,24 @@ class Stock_mix:
 
         # Match datetime with utc, NOTICE that timezone are assumed to be same
         # in one mixed stock 
+        # date_ref == 'latest': return profit_ratio based on the latest two days (dirty fix for /now
 
         # Timezone convert
+        #TODO a utc convert method for Stock_mix
         if date_ref is None:
             date_ref_index_utc = pd.Timestamp(self.create_time).tz_localize('UTC')
         else:
             date_ref_index_utc = pd.Timestamp(date_ref).tz_localize('UTC')
         date_ref_index = (
             date_ref_index_utc.tz_convert('Asia/Shanghai').date()
-            if stock_market[self.stock_list[0].market_id] == 'SZ' or 'SH'
+            if stock_market[self.stock_list[0].market_id] == 'SZ' or 'SH' or 'HK'
             else date_ref_index_utc.tz_convert('US/Eastern').date())
+
         get_value = lambda x: (x.index.values[0], x.values[0])
-        mix_price_ref_idx, mix_price_ref = get_value(mix_data.loc[mix_data['date'] == str(date_ref_index)]['close'])
+        if date_ref == 'latest'
+            mix_price_ref_idx, mix_price_ref = get_value(mix_data.loc[mix_data['date'] == list(mix_data['date'])[-2]]['close'])
+        else:
+            mix_price_ref_idx, mix_price_ref = get_value(mix_data.loc[mix_data['date'] == str(date_ref_index)]['close'])
         mix_price_today_idx, _ = get_value(mix_data.loc[mix_data['date'] == list(mix_data['date'])[-1]]['close'])
         profit_ratio = (mix_data['close'].values - mix_price_ref) / mix_price_ref
 
@@ -492,8 +498,9 @@ async def main():
 
     # Async test
     mix_data_async, matrix_close_price_async = await mix_data_collector_async(enl_stock_mix)
+    return mix_data_async, matrix_close_price_async 
 
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
-    stock_data = loop.run_until_complete(main())
+    mix_data_async, matrix_close_price_async = loop.run_until_complete(main())

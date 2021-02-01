@@ -75,8 +75,10 @@ async def kline(message, query=None):
             if args.days is None:
                 time_begin = time_mix_created
                 macd = False
-            stock_data, _ = mix_data_collector(stock, time_begin=time_begin, time_end=time_end, 
-                                               time_ref=time_mix_created)
+            stock_data, _ = await mix_data_collector_async(stock, time_begin=time_begin, time_end=time_end, 
+                                                           time_ref=time_mix_created)
+            # stock_data, _ = mix_data_collector(stock, time_begin=time_begin, time_end=time_end, 
+            #                                    time_ref=time_mix_created)
             plot_kline(stock_data=stock_data, title=f'kline of {stock.code}',
                        plot_type='line', volume=False, macd=macd, output=buf)
         else:        
@@ -151,7 +153,8 @@ async def status(message):
         time_begin = stock_mix.create_time.strftime("%Y%m%d")
         buf = io.BytesIO()
         time_now = datetime.datetime.utcnow().strftime("%Y%m%d %H:%M:%S")
-        stock_data, matrix_close_price = mix_data_collector(stock_mix, time_begin=time_begin)
+        # stock_data, matrix_close_price = mix_data_collector(stock_mix, time_begin=time_begin)
+        stock_data, matrix_close_price = await mix_data_collector_async(stock_mix, time_begin=time_begin)
         profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, 
                                                                       date_ref=stock_mix.create_time)
         if args.detail:
@@ -188,23 +191,18 @@ async def now(message):
         except IndexError:
             time_begin = stock_mix.create_time.strftime("%Y%m%d")
         buf = io.BytesIO()
-        time_now = datetime.datetime.utcnow().strftime("%Y%m%d %H:%M:%S")
-        # datetime_yesterday = (datetime.datetime.utcnow() - datetime.timedelta(days=1)).strftime("%Y%m%d")
-        # stock_data, matrix_close_price = mix_data_collector(stock_mix, time_begin=datetime_yesterday)
-        for i in range(9):
-            # temporary fix for non-trading days
-            datetime_yesterday = (datetime.datetime.utcnow() - datetime.timedelta(days=i+1)).strftime("%Y%m%d")
-            stock_data, matrix_close_price = mix_data_collector(stock_mix, time_begin=datetime_yesterday)
-            if matrix_close_price.shape[1] > 1:
-                break
+        # time_now = datetime.datetime.utcnow().strftime("%Y%m%d %H:%M:%S")
+        datetime_ref = (datetime.datetime.utcnow() - datetime.timedelta(days=9)).strftime("%Y%m%d") # refer to last trading day
+        # stock_data, matrix_close_price = mix_data_collector(stock_mix, time_begin=datetime_ref)
+        stock_data, matrix_close_price = await mix_data_collector_async(stock_mix, time_begin=datetime_ref)
         profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, 
-                                                                      date_ref=datetime_yesterday)
+                                                                      date_ref='latest')
         plot_stock_profit(stock_mix, stock_profit_ratio, 
-                          title=f'{stock_mix.name} {datetime_yesterday}-{time_now} (UTC)', 
+                          title=f'{stock_mix.name} Latest return rate', #TODO 
                           output=buf)
         buf.seek(0)
         await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+\
-                                               "\nToday's return rate: {:.2%}".format(profit_ratio[-1]))
+                                               "\nLatest return rate: {:.2%}".format(profit_ratio[-1]))
     else:
         pass
         #TODO if there will be stock_mix query
