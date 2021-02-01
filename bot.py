@@ -195,7 +195,7 @@ async def now(message):
             # temporary fix for non-trading days
             datetime_yesterday = (datetime.datetime.utcnow() - datetime.timedelta(days=i+1)).strftime("%Y%m%d")
             stock_data, matrix_close_price = mix_data_collector(stock_mix, time_begin=datetime_yesterday)
-            if matrix_close_price.shape[1] > 1
+            if matrix_close_price.shape[1] > 1:
                 break
         profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, 
                                                                       date_ref=datetime_yesterday)
