@@ -189,8 +189,14 @@ async def now(message):
             time_begin = stock_mix.create_time.strftime("%Y%m%d")
         buf = io.BytesIO()
         time_now = datetime.datetime.utcnow().strftime("%Y%m%d %H:%M:%S")
-        datetime_yesterday = (datetime.datetime.utcnow() - datetime.timedelta(days=1)).strftime("%Y%m%d")
-        stock_data, matrix_close_price = mix_data_collector(stock_mix, time_begin=datetime_yesterday)
+        # datetime_yesterday = (datetime.datetime.utcnow() - datetime.timedelta(days=1)).strftime("%Y%m%d")
+        # stock_data, matrix_close_price = mix_data_collector(stock_mix, time_begin=datetime_yesterday)
+        for i in range(9):
+            # temporary fix for non-trading days
+            datetime_yesterday = (datetime.datetime.utcnow() - datetime.timedelta(days=i+1)).strftime("%Y%m%d")
+            stock_data, matrix_close_price = mix_data_collector(stock_mix, time_begin=datetime_yesterday)
+            if matrix_close_price.shape[1] > 1
+                break
         profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, 
                                                                       date_ref=datetime_yesterday)
         plot_stock_profit(stock_mix, stock_profit_ratio, 
