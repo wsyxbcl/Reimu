@@ -125,17 +125,20 @@ class Stock_mix:
 
         # Timezone convert
         #TODO a utc convert method for Stock_mix
-        if date_ref is None:
-            date_ref_index_utc = pd.Timestamp(self.create_time).tz_localize('UTC')
+        if date_ref == 'latest':
+            date_ref_latest = True
         else:
-            date_ref_index_utc = pd.Timestamp(date_ref).tz_localize('UTC')
-        date_ref_index = (
-            date_ref_index_utc.tz_convert('Asia/Shanghai').date()
-            if stock_market[self.stock_list[0].market_id] == 'SZ' or 'SH' or 'HK'
-            else date_ref_index_utc.tz_convert('US/Eastern').date())
+            if date_ref is None:
+                date_ref_index_utc = pd.Timestamp(self.create_time).tz_localize('UTC')
+            else:
+                date_ref_index_utc = pd.Timestamp(date_ref).tz_localize('UTC')
+            date_ref_index = (
+                date_ref_index_utc.tz_convert('Asia/Shanghai').date()
+                if stock_market[self.stock_list[0].market_id] == 'SZ' or 'SH' or 'HK'
+                else date_ref_index_utc.tz_convert('US/Eastern').date())
 
         get_value = lambda x: (x.index.values[0], x.values[0])
-        if date_ref == 'latest'
+        if date_ref_latest:
             mix_price_ref_idx, mix_price_ref = get_value(mix_data.loc[mix_data['date'] == list(mix_data['date'])[-2]]['close'])
         else:
             mix_price_ref_idx, mix_price_ref = get_value(mix_data.loc[mix_data['date'] == str(date_ref_index)]['close'])
