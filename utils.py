@@ -1,3 +1,5 @@
+import aiohttp
+import asyncio
 import datetime
 from functools import wraps
 import hashlib
@@ -161,10 +163,29 @@ def _query_test(stock_list):
 def timing(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
+        print('{}.time'.format(func.__name__))
         start = time.perf_counter()
         func_return = func(*args, **kwargs)
         end = time.perf_counter()
-        print("{}, runtime: {}".format(func.__name__, end - start))
+        print("runtime: {}".format(end - start))
+        return func_return
+    return wrapper
+
+def timing_async(func):
+    async def helper(func, *args, **params):
+        if asyncio.iscoroutinefunction(func):
+            print("coroutine function")
+            return await func(*args, **params)
+        else:
+            print("not a coroutine function")
+            return func(*args, **params)
+
+    @wraps(func)
+    async def wrapper(*args, **params):
+        print('{}.time'.format(func.__name__))
+        start = time.time()
+        func_return = await helper(func, *args, **params)
+        print("runtime: {}".format(time.time() - start))
         return func_return
     return wrapper
 
@@ -233,7 +254,7 @@ def data_collector(stock, time_begin='19900101', time_end='20991231'):
     stock_data["date"] = pd.to_datetime(stock_data["date"])
     return stock_data
 
-@timing
+# @timing
 def mix_data_collector(stock_mix, time_begin='20210101', time_end='20991231', time_ref=None):
     """
     Collecting and postprocessing for Stock_mix, where only close price are collected
@@ -375,7 +396,73 @@ def gen_stock_mix(mix_code, mix_name, stock_names, holding_ratios):
     print(stock_mix)
     return stock_mix
 
-def main():
+
+# async utilities
+async def data_collector_async(stock, client, time_begin='19900101', time_end='20991231'):
+    stock_url = eastmoney_base.format(market=stock.market_id, 
+                                      bench_code=stock.code, 
+                                      time_begin=time_begin, 
+                                      time_end=time_end)
+    try:
+        response = await client.request(method='GET', url=stock_url)
+        response_json = await response.json()
+        stock_data = pd.DataFrame(map(lambda x: x.split(','), response_json["data"]["klines"]))
+    except HTTPError as e:
+        raise QueryError(f"HTTP error: {e}") from e
+    except TypeError as e:
+        raise QueryError("Can't find kline data") from e
+    stock_data.columns = ["date", "open", "close", "high", "low", "volume", "money", "change"]
+    stock_data["date"] = pd.to_datetime(stock_data["date"])
+    return stock_data
+
+# @timing_async
+async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='20991231', time_ref=None):
+    """
+    Collecting and postprocessing for Stock_mix, where only close price are collected
+    Noted that long time range can cause date inconsistency
+    """
+    # using the same client instead of creating everytime may improve the performance
+    async with aiohttp.ClientSession() as client: 
+        stock_data = await asyncio.gather(*[data_collector_async(stock, client, time_begin=time_begin, time_end=time_end) for stock in stock_mix.stock_list])
+    if time_ref is None:
+        time_ref = time_begin
+    # Checking whether the dates are consistent
+    # print(([len(stock['date'].values) for stock in stock_data]))
+    # print([stock.code for stock in stock_mix.stock_list])
+    try:
+        matrix_date = np.array([stock['date'].values for stock in stock_data])
+        #TODO #17
+            # for i, date in enumerate(matrix_date):
+            #     if i == 0:
+            #         date_ref = date
+            #     else:
+            #         date_ref = matrix_date[i-1]
+            #     print(str(i)+' '+str(len(date)))
+            #     if len(date_ref) != (date):
+            #         print(set(date_ref) - set(date))
+        if not np.equal(matrix_date[0], matrix_date).all():
+            print("date inconsistent")
+    except ValueError:
+        # operands could not be broadcast together
+        print("Mix data can't broadcast")
+        raise
+
+    matrix_close_price = np.array([np.array(stock['close']) for stock in stock_data]).astype(float)
+    # matrix_volume = np.array([np.array(stock['volume']) for stock in stock_data]).astype(float)
+    # only need close price here
+    close_price_ref = matrix_close_price[:, 0]
+    stock_share_ratios = stock_mix.holding_ratio / close_price_ref
+    value_mix = np.average(matrix_close_price, axis=0, weights=stock_share_ratios) 
+    value_mix = value_mix / value_mix[0] # norm to 1
+    mix_data = stock_data[0].copy()
+    mix_data = mix_data.drop(['money', 'change', 'volume'], axis=1)
+    mix_data['close'] = value_mix
+    # mix_data['volume'] = volume_mix
+    # Data redundancy, rather inelegant here, might go PR on mplfinance (or simplily using plot instead)
+    mix_data['low'] = mix_data['open'] = mix_data['high'] = np.zeros(len(stock_data[0]['date']))
+    return mix_data, matrix_close_price # to be used in profit analysis
+
+async def main():
     # kline plot test
     # x = data_collector(stock_query('000300', echo=True)[0], time_begin='20210101')
     # plot_kline(x, title='test_kline', plot_type='candle', volume=True, macd=True)
@@ -386,7 +473,7 @@ def main():
     # Stock_mix test
     # enl_stock_name = [] # a list of query keywords (#TODO check: result must be unique)
     # enl_stock_ratio = [1 / len(enl_stock_name)] * len(enl_stock_name)
-    # enl_stock_mix = gen_stock_mix(mix_code='enl001', mix_name="enl stock mix", 
+    # enl_stock_mix = gen_stock_mix(mix_code='enltest', mix_name="enl001", 
     #                               stock_names=enl_stock_name, holding_ratios=enl_stock_ratio)
 
     # Stock_mix object Loading & Pie plot, return rate analysis test
@@ -403,5 +490,10 @@ def main():
     # plot_profitline(mix_data, profit_ratio)
     # plot_stock_profit(enl_stock_mix, stock_profit_ratio)
 
+    # Async test
+    mix_data_async, matrix_close_price_async = await mix_data_collector_async(enl_stock_mix)
+
+
 if __name__ == '__main__':
-    main()
+    loop = asyncio.get_event_loop()
+    stock_data = loop.run_until_complete(main())
