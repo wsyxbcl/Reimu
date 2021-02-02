@@ -450,9 +450,9 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
     close_price_ref = matrix_close_price[:, 0]
     stock_share_ratios = stock_mix.holding_ratio / close_price_ref
     value_mix = np.average(matrix_close_price, axis=0, weights=stock_share_ratios) 
-    if time_ref = 'oldest':
+    if time_ref == 'oldest':
         value_mix = value_mix / value_mix[0] # norm to 1
-    elif time_ref = 'latest':
+    elif time_ref == 'latest':
         value_mix = value_mix / value_mix[-1]
     else:
         raise ValueError
