@@ -109,7 +109,7 @@ class Stock_mix:
         ax1.set_title(f"{self.name}({self.code}), created at {self.create_time}(UTC)")
         plt.tight_layout()
         fig.savefig(output, dpi=300)
-        pit.close(fig)
+        plt.close(fig)
 
     def save(self):
         output=os.path.join(data_path, self.code+'.pickle')

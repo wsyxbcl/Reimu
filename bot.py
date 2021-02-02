@@ -151,7 +151,7 @@ async def status(message):
     logging.info(f'query result:{stock_list}')
     if len(stock_list) == 1 and type(stock_mix := stock_list[0]) is Stock_mix:
         buf = io.BytesIO()
-        if arg.ls:
+        if args.ls:
             stock_mix.draw(output=buf)
             buf.seek(0)
             await message.reply_photo(buf, caption=str(stock_mix))
