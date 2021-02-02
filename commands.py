@@ -56,10 +56,12 @@ def argparse_status(message):
     Options:
         -d    detailed mode; plot the return rates of all stocks in the portfolio
         -h    show help message
+        -l    list stocks in the portfolio
     """
     command = message.split(' ')
     parser = argparse.ArgumentParser(add_help=False, exit_on_error=False)
     parser.add_argument('-d', dest='detail', action='store_true')
+    parser.add_argument('-l', dest='ls', action='store_true')
     parser.add_argument('-h', dest='help', action='store_true')
     parser.add_argument('stock_mix_code', nargs='?')
     args, _ = parser.parse_known_args(command[1:])

@@ -150,24 +150,29 @@ async def status(message):
     stock_list = stock_query(keyword=args.stock_mix_code)
     logging.info(f'query result:{stock_list}')
     if len(stock_list) == 1 and type(stock_mix := stock_list[0]) is Stock_mix:
-        time_begin = stock_mix.create_time.strftime("%Y%m%d")
         buf = io.BytesIO()
-        time_now = datetime.datetime.utcnow().strftime("%Y%m%d %H:%M:%S")
-        # stock_data, matrix_close_price = mix_data_collector(stock_mix, time_begin=time_begin)
-        stock_data, matrix_close_price = await mix_data_collector_async(stock_mix, time_begin=time_begin)
-        profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, 
-                                                                      date_ref=stock_mix.create_time)
-        if args.detail:
-            plot_stock_profit(stock_mix, stock_profit_ratio, 
-                              title=f'{stock_mix.name} {time_begin}-{time_now} (UTC)',
-                              output=buf)
+        if arg.ls:
+            stock_mix.draw(output=buf)
+            buf.seek(0)
+            await message.reply_photo(buf, caption=str(stock_mix))
         else:
-            plot_profitline(stock_data, profit_ratio, 
-                            title=f'Return rate of {stock_mix.code}, {time_begin}-{time_now} (UTC)',
-                            output=buf)
-        buf.seek(0)
-        await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+\
-                                               "\nCurrent return rate: {:.2%}".format(profit_ratio[-1]))
+            time_begin = stock_mix.create_time.strftime("%Y%m%d")
+            time_now = datetime.datetime.utcnow().strftime("%Y%m%d %H:%M:%S")
+            # stock_data, matrix_close_price = mix_data_collector(stock_mix, time_begin=time_begin)
+            stock_data, matrix_close_price = await mix_data_collector_async(stock_mix, time_begin=time_begin)
+            profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, 
+                                                                        date_ref=stock_mix.create_time)
+            if args.detail:
+                plot_stock_profit(stock_mix, stock_profit_ratio, 
+                                title=f'{stock_mix.name} {time_begin}-{time_now} (UTC)',
+                                output=buf)
+            else:
+                plot_profitline(stock_data, profit_ratio, 
+                                title=f'Return rate of {stock_mix.code}, {time_begin}-{time_now} (UTC)',
+                                output=buf)
+            buf.seek(0)
+            await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+\
+                                                "\nCurrent return rate: {:.2%}".format(profit_ratio[-1]))
     else:
         pass
         #TODO if there will be stock_mix query
