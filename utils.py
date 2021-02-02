@@ -415,7 +415,7 @@ async def data_collector_async(stock, client, time_begin='19900101', time_end='2
     return stock_data
 
 # @timing_async
-async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='20991231', time_ref=None):
+async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='20991231', time_ref='latest'):
     """
     Collecting and postprocessing for Stock_mix, where only close price are collected
     Noted that long time range can cause date inconsistency
@@ -423,8 +423,6 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
     # using the same client instead of creating everytime may improve the performance
     async with aiohttp.ClientSession() as client: 
         stock_data = await asyncio.gather(*[data_collector_async(stock, client, time_begin=time_begin, time_end=time_end) for stock in stock_mix.stock_list])
-    if time_ref is None:
-        time_ref = time_begin
     # Checking whether the dates are consistent
     # print(([len(stock['date'].values) for stock in stock_data]))
     # print([stock.code for stock in stock_mix.stock_list])
@@ -452,7 +450,12 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
     close_price_ref = matrix_close_price[:, 0]
     stock_share_ratios = stock_mix.holding_ratio / close_price_ref
     value_mix = np.average(matrix_close_price, axis=0, weights=stock_share_ratios) 
-    value_mix = value_mix / value_mix[0] # norm to 1
+    if time_ref = 'oldest':
+        value_mix = value_mix / value_mix[0] # norm to 1
+    elif time_ref = 'latest':
+        value_mix = value_mix / value_mix[-1]
+    else:
+        raise ValueError
     mix_data = stock_data[0].copy()
     mix_data = mix_data.drop(['money', 'change', 'volume'], axis=1)
     mix_data['close'] = value_mix
