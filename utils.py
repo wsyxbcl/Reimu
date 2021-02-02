@@ -128,6 +128,7 @@ class Stock_mix:
         if date_ref == 'latest':
             date_ref_latest = True
         else:
+            date_ref_latest = False
             if date_ref is None:
                 date_ref_index_utc = pd.Timestamp(self.create_time).tz_localize('UTC')
             else:
