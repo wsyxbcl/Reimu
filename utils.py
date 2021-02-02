@@ -358,6 +358,7 @@ def plot_kline(stock_data, title='', plot_type='candle', volume=True, macd=False
         mav_leg.get_frame().set_alpha(0.4)
     axes[0].set_title(title)
     fig.savefig(output, dpi=300)
+    plt.close(fig)
 
 def plot_profitline(stock_data, profit_ratio, title='', output=os.path.join(_test_path, 'profitline.jpg')):
     stock_data['close'] = profit_ratio
@@ -372,6 +373,7 @@ def plot_profitline(stock_data, profit_ratio, title='', output=os.path.join(_tes
                          returnfig=True)
     axes[0].set_title(title)
     fig.savefig(output, dpi=300)
+    plt.close(fig)
    
 def plot_stock_profit(stock_mix, stock_profit_ratio, title='', output=os.path.join(_test_path, 'profitstocks.jpg')):
     stock_df = pd.DataFrame()
@@ -390,21 +392,7 @@ def plot_stock_profit(stock_mix, stock_profit_ratio, title='', output=os.path.jo
     plt.title(title)
     plt.grid(linestyle='--', alpha=0.5)
     plt.savefig(output, dpi=300)
-
-def gen_stock_mix(mix_code, mix_name, stock_names, holding_ratios):
-    stock_list = []
-    for stock_name in stock_names:
-        query_result = stock_query(stock_name, echo=True)
-        if len(query_result) == 1:
-            stock_list.append(query_result[0])
-        else:
-            print("multiple query results on "+stock_name)
-    stock_mix = Stock_mix(code=mix_code, name=mix_name, stock_list=stock_list, 
-                          holding_ratio=holding_ratios)
-    stock_mix.save()
-    print(stock_mix)
-    return stock_mix
-
+    plt.close()
 
 # async utilities
 async def data_collector_async(stock, client, time_begin='19900101', time_end='20991231'):
@@ -470,6 +458,21 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
     # Data redundancy, rather inelegant here, might go PR on mplfinance (or simplily using plot instead)
     mix_data['low'] = mix_data['open'] = mix_data['high'] = np.zeros(len(stock_data[0]['date']))
     return mix_data, matrix_close_price # to be used in profit analysis
+
+# generate Stock_mix
+def gen_stock_mix(mix_code, mix_name, stock_names, holding_ratios):
+    stock_list = []
+    for stock_name in stock_names:
+        query_result = stock_query(stock_name, echo=True)
+        if len(query_result) == 1:
+            stock_list.append(query_result[0])
+        else:
+            print("multiple query results on "+stock_name)
+    stock_mix = Stock_mix(code=mix_code, name=mix_name, stock_list=stock_list, 
+                          holding_ratio=holding_ratios)
+    stock_mix.save()
+    print(stock_mix)
+    return stock_mix
 
 async def main():
     # kline plot test
