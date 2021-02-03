@@ -87,8 +87,6 @@ async def kline(message, query=None):
             else:
                 stock_data, _ = await mix_data_collector_async(stock, time_begin=time_begin, time_end=time_end, 
                                                                time_ref='latest')
-            # stock_data, _ = mix_data_collector(stock, time_begin=time_begin, time_end=time_end, 
-            #                                    time_ref=time_mix_created)
             plot_kline(stock_data=stock_data, title=f'kline of {stock.code}',
                        plot_type='line', volume=False, macd=macd, output=buf)
         else:        
@@ -188,7 +186,6 @@ async def status(message):
                                                    "\nCurrent return rate: {:.2%}".format(profit_ratio[-1]))
     else:
         pass
-        #TODO if there will be stock_mix query
         #TODO if there will be company status
 
 @dp.message_handler(commands=['now'])
@@ -209,9 +206,7 @@ async def now(message):
         except IndexError:
             time_begin = stock_mix.create_time.strftime("%Y%m%d")
         buf = io.BytesIO()
-        # time_now = datetime.datetime.utcnow().strftime("%Y%m%d %H:%M:%S")
         datetime_ref = (datetime.datetime.utcnow() - datetime.timedelta(days=9)).strftime("%Y%m%d") # refer to last trading day
-        # stock_data, matrix_close_price = mix_data_collector(stock_mix, time_begin=datetime_ref)
         stock_data, matrix_close_price = await mix_data_collector_async(stock_mix, time_begin=datetime_ref)
         profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, 
                                                                       date_ref='latest')
@@ -223,7 +218,6 @@ async def now(message):
                                                "\nLatest return rate: {:.2%}".format(profit_ratio[-1]))
     else:
         pass
-        #TODO if there will be stock_mix query
         #TODO combined with dayline
 
 # To get photo file_id

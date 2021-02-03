@@ -22,7 +22,6 @@ _test_path = './demo'
 #TODO API for split-adjusted share prices
 eastmoney_base = "http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={market}.{bench_code}&fields1=f1%2Cf2%2Cf3%2Cf4%2Cf5&fields2=f51%2Cf52%2Cf53%2Cf54%2Cf55%2Cf56%2Cf57%2Cf58&klt=101&fqt=0&beg={time_begin}&end={time_end}"
 
-#TODO HK market
 
 #TODO still need a check
 # "沪市（主板、科创板、基金）、深市（主板、中小板、创业板、基金）", guided by Maple
@@ -59,7 +58,6 @@ class QueryError(Exception):
         self.message = message
 
 class Stock:
-    #TODO refined Stock class
     def __init__(self, code, name, market_id, type_id):
         self.code = code
         self.name = name
@@ -93,7 +91,7 @@ class Stock_mix:
         self.name = name
         self.stock_list = stock_list
         self.holding_ratio = holding_ratio
-        self.create_time = create_time #TODO just date is fine, consider using utf-8
+        self.create_time = create_time 
 
     def draw(self, output=os.path.join(_test_path, 'stock_mix.jpg')):
         labels = [stock.name for stock in self.stock_list]
@@ -220,7 +218,6 @@ def stock_query(keyword, filter_md5=None, filter_code=None, echo=False):
     Not ideal but works.
     """
     if (local_stock := (keyword+'.pickle')) in os.listdir(data_path):
-        #TODO do query instead of match
         with open(os.path.join(data_path, local_stock), 'rb') as f:
             local_stock = pickle.load(f)
         return [local_stock] # to make return value consistent
@@ -287,11 +284,7 @@ def mix_data_collector(stock_mix, time_begin='20210101', time_end='20991231', ti
     """
     if time_ref is None:
         time_ref = time_begin
-    #TODO use time_ref data when plot kline and 'value' as ylabel
     stock_data = [data_collector(stock, time_begin=time_begin, time_end=time_end) for stock in stock_mix.stock_list]
-    # Checking whether the dates are consistent
-    # print(([len(stock['date'].values) for stock in stock_data]))
-    # print([stock.code for stock in stock_mix.stock_list])
     try:
         matrix_date = np.array([stock['date'].values for stock in stock_data], dtype=object)
         #TODO #17
@@ -442,15 +435,6 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
     # print([stock.code for stock in stock_mix.stock_list])
     try:
         matrix_date = np.array([stock['date'].values for stock in stock_data])
-        #TODO #17
-            # for i, date in enumerate(matrix_date):
-            #     if i == 0:
-            #         date_ref = date
-            #     else:
-            #         date_ref = matrix_date[i-1]
-            #     print(str(i)+' '+str(len(date)))
-            #     if len(date_ref) != (date):
-            #         print(set(date_ref) - set(date))
         if not np.equal(matrix_date[0], matrix_date).all():
             print("date inconsistent")
     except ValueError:
