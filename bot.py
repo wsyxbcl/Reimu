@@ -41,9 +41,16 @@ def get_time_range(day_interval=120):
     time_begin = time_end - datetime.timedelta(days=day_interval)
     return (time_begin.strftime("%Y%m%d"), time_end.strftime("%Y%m%d"))
 
-@dp.message_handler(commands=['start', 'help'])
+@dp.message_handler(commands=['start'])
 async def send_welcome(message):
-    await message.reply("Busy in stock trading, no time for talk") 
+    await message.reply("Busy in stock trading, no time for talk.\n\
+                        /help if you need, contribute or build your own from https://github.com/wsyxbcl/Reimu") 
+
+@dp.message_handler(commands=['help'])
+async def send_help(message):
+    await message.reply("Current functions are: \n\
+                        /kline, /status, /now and /status, \
+                        parameters are retrieved using argparse, add -h accordingly for detail.")
 
 @dp.message_handler(commands=['kline'])
 async def kline(message, query=None):
