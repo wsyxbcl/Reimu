@@ -166,19 +166,22 @@ async def status(message):
             buf.seek(0)
             await message.reply_photo(buf, caption=str(stock_mix))
         else:
-            time_begin = stock_mix.create_time.strftime("%Y%m%d")
+            # add buffer for non-trading days
+            time_created = stock_mix.create_time.strftime("%Y%m%d")
+            time_begin = time_created - datetime.timedelta(days=9)
             time_now = datetime.datetime.utcnow().strftime("%Y%m%d %H:%M:%S")
             # stock_data, matrix_close_price = mix_data_collector(stock_mix, time_begin=time_begin)
+
             stock_data, matrix_close_price = await mix_data_collector_async(stock_mix, time_begin=time_begin)
             profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, 
-                                                                        date_ref=stock_mix.create_time)
+                                                                          date_ref=stock_mix.create_time)
             if args.detail:
                 plot_stock_profit(stock_mix, stock_profit_ratio, 
-                                title=f'{stock_mix.name} {time_begin}-{time_now} (UTC)',
+                                title=f'{stock_mix.name} {time_created}-{time_now} (UTC)',
                                 output=buf)
             else:
                 plot_profitline(stock_data, profit_ratio, 
-                                title=f'Return rate of {stock_mix.code}, {time_begin}-{time_now} (UTC)',
+                                title=f'Return rate of {stock_mix.code}, {time_created}-{time_now} (UTC)',
                                 output=buf)
             buf.seek(0)
             await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+\
