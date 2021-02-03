@@ -144,12 +144,12 @@ class Stock_mix:
             mix_price_ref_idx, mix_price_ref = get_value(mix_data.loc[mix_data['date'] == list(mix_data['date'])[-2]]['close'])
         else:
             for i in range(9):
-                try:
-                    mix_price_ref_idx, mix_price_ref = get_value(mix_data.loc[mix_data['date'] == str(date_ref_index)]['close'])
+                while True:
+                    try:
+                        mix_price_ref_idx, mix_price_ref = get_value(mix_data.loc[mix_data['date'] == str(date_ref_index - datetime.timedelta(days=i))]['close'])
+                    except IndexError:
+                        continue
                     break
-                except IndexError:
-                    date_ref_index = date_ref_index - datetime.timedelta(days=1)
-                    continue
         mix_price_today_idx, _ = get_value(mix_data.loc[mix_data['date'] == list(mix_data['date'])[-1]]['close'])
         profit_ratio = (mix_data['close'].values - mix_price_ref) / mix_price_ref
 
