@@ -60,7 +60,7 @@ async def kline(message, query=None):
         await message.reply(argparse_kline.__doc__)
         return 0
     try:
-        stock_list = stock_query(keyword=args.keyword[0], stock_md5=args.md5)
+        stock_list = stock_query(keyword=args.keyword[0], filter_md5=args.md5)
     except IndexError:
         raise
     logging.info(f'query result:{stock_list}')
