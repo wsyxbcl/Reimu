@@ -144,13 +144,16 @@ class Stock_mix:
             mix_price_ref_idx, mix_price_ref = get_value(mix_data.loc[mix_data['date'] == list(mix_data['date'])[-2]]['close'])
         else:
             for i in range(9):
-                while True:
-                    try:
-                        mix_price_ref_idx, mix_price_ref = get_value(mix_data.loc[mix_data['date'] == str(date_ref_index - datetime.timedelta(days=i))]['close'])
-                    except IndexError:
-                        continue
-                    break
-        mix_price_today_idx, _ = get_value(mix_data.loc[mix_data['date'] == list(mix_data['date'])[-1]]['close'])
+                try:
+                    mix_price_ref_idx, mix_price_ref = get_value(mix_data.loc[mix_data['date'] == str(date_ref_index - datetime.timedelta(days=j))]['close'])
+                except IndexError:
+                    continue
+                break
+        try:
+            mix_price_today_idx, _ = get_value(mix_data.loc[mix_data['date'] == list(mix_data['date'])[-1]]['close'])
+        except UnboundLocalError:
+            print("No ref data in mix_data")
+            raise
         profit_ratio = (mix_data['close'].values - mix_price_ref) / mix_price_ref
 
         matrix_price_ref = matrix_close_price[:, mix_price_ref_idx]
