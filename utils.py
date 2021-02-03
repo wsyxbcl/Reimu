@@ -145,7 +145,7 @@ class Stock_mix:
         else:
             for i in range(9):
                 try:
-                    mix_price_ref_idx, mix_price_ref = get_value(mix_data.loc[mix_data['date'] == str(date_ref_index - datetime.timedelta(days=j))]['close'])
+                    mix_price_ref_idx, mix_price_ref = get_value(mix_data.loc[mix_data['date'] == str(date_ref_index - datetime.timedelta(days=i))]['close'])
                 except IndexError:
                     continue
                 break
