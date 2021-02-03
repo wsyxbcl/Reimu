@@ -215,7 +215,7 @@ def stock_query(keyword, filter_md5=None, filter_code=None, echo=False):
         return [local_stock] # to make return value consistent
 
     if keyword.isspace() or not keyword:
-        raise QueryError("Empty query")
+        raise QueryError("Empty query on <{}>".format(keyword))
     # configure search API
     query_url = 'http://searchapi.eastmoney.com/api/suggest/get'
     cb_param_pre = 'jQuery112406497239864696334_'
