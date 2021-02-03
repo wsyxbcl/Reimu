@@ -203,7 +203,7 @@ def timing_async(func):
 # Data collecting utilities
 #TODO minus plot -> /compare command
 #TODO real time price -> /realtime command
-def stock_query(keyword, stock_md5=None, echo=False):
+def stock_query(keyword, filter_md5=None, filter_code=None, echo=False):
     """
     borrowed from https://github.com/pengnanxiaomeimei/stock_data_analysis/
     Not ideal but works.
@@ -243,8 +243,11 @@ def stock_query(keyword, stock_md5=None, echo=False):
                   for x in query_result if x['MktNum'] in stock_market and \
                                            (x['SecurityType'] in stock_type or x['Classify'] == "UsStock") and \
                                            x["SecurityTypeName"] != "曾用"]
-    if stock_md5:
-        stock_list = [stock for stock in stock_list if stock.md5 == stock_md5]
+    if filter_md5:
+        stock_list = [stock for stock in stock_list if stock.md5 == filter_md5]
+    if filter_code:
+        if keyword in [stock.code for stock in stock_list]:
+            stock_list = [stock for stock in stock_list if stock.code == keyword]
     if echo:
         print(stock_list)
     if not stock_list:
@@ -468,7 +471,7 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
 def gen_stock_mix(mix_code, mix_name, stock_names, holding_ratios):
     stock_list = []
     for stock_name in stock_names:
-        query_result = stock_query(stock_name, echo=True)
+        query_result = stock_query(stock_name, filter_code=True, echo=True)
         if len(query_result) == 1:
             stock_list.append(query_result[0])
         else:
