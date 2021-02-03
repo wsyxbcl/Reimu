@@ -177,15 +177,15 @@ async def status(message):
                                                                           date_ref=stock_mix.create_time)
             if args.detail:
                 plot_stock_profit(stock_mix, stock_profit_ratio, 
-                                title=f'{stock_mix.name} {time_created}-{time_now} (UTC)',
-                                output=buf)
+                                  title=f'{stock_mix.name} {time_created}-{time_now} (UTC)',
+                                  output=buf)
             else:
                 plot_profitline(stock_data, profit_ratio, 
                                 title=f'Return rate of {stock_mix.code}, {time_created}-{time_now} (UTC)',
                                 output=buf)
             buf.seek(0)
             await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+\
-                                                "\nCurrent return rate: {:.2%}".format(profit_ratio[-1]))
+                                                   "\nCurrent return rate: {:.2%}".format(profit_ratio[-1]))
     else:
         pass
         #TODO if there will be stock_mix query

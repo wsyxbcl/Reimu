@@ -165,9 +165,11 @@ class Stock_mix:
     def __repr__(self):
         return "<Stock_mix code={0.code!r} name={0.name!r}>".format(self)
     def __str__(self):
+        holding_ratio_sum = sum([float(ratio) for ratio in self.holding_ratio])
+        holding_ratio_norm = [float(ratio) / holding_ratio_sum for ratio in self.holding_ratio]
         return "{0.name!s}({0.code!s}), created at {0.create_time!s}\n".format(self) +\
                "\n".join("{!s}\t{:.1%}".format(stock, ratio)\
-               for stock, ratio in zip(self.stock_list, self.holding_ratio))
+               for stock, ratio in zip(self.stock_list, holding_ratio_norm))
 
 # Test utilities
 def _query_test(stock_list):
