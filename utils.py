@@ -463,11 +463,13 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
     """
     # using the same client instead of creating everytime may improve the performance
     async with aiohttp.ClientSession() as client: 
+        # stock_data: list of pd.df
         stock_data = await asyncio.gather(*[data_collector_async(stock, client, time_begin=time_begin, time_end=time_end) for stock in stock_mix.stock_list])
     # Checking whether the dates are consistent
     # print(([len(stock['date'].values) for stock in stock_data]))
     # print([stock.code for stock in stock_mix.stock_list])
     try:
+        # matrix_date: (n_stock, n_days) np.array, type: numpy.datetime64
         matrix_date = np.array([stock['date'].values for stock in stock_data])
         if not np.equal(matrix_date[0], matrix_date).all():
             print("date inconsistent")
@@ -479,15 +481,19 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
     matrix_close_price = np.array([np.array(stock['close']) for stock in stock_data]).astype(float)
     # matrix_volume = np.array([np.array(stock['volume']) for stock in stock_data]).astype(float)
     # only need close price here
-    close_price_ref = matrix_close_price[:, 0]
-    stock_share_ratios = stock_mix.holding_ratio / close_price_ref
-    value_mix = np.average(matrix_close_price, axis=0, weights=stock_share_ratios) 
     if time_ref == 'oldest':
-        value_mix = value_mix / value_mix[0] # norm to 1
+        date_ref_index = 0
     elif time_ref == 'latest':
-        value_mix = value_mix / value_mix[-1]
+        date_ref_index = -1
+    elif time_ref == 'created':
+        date_created_stamp = pd.to_datetime(stock_mix.create_time.date())
+        date_ref_index = np.where(matrix_date[0] == date_created_stamp)[0][0]
     else:
         raise ValueError
+    close_price_ref = matrix_close_price[:, date_ref_index]
+    stock_share_ratios = stock_mix.holding_ratio / close_price_ref
+    value_mix = np.average(matrix_close_price, axis=0, weights=stock_share_ratios) 
+    value_mix = value_mix / value_mix[date_ref_index] # norm to 1
     mix_data = stock_data[0].copy()
     mix_data = mix_data.drop(['money', 'change', 'volume'], axis=1)
     mix_data['close'] = value_mix

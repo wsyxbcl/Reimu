@@ -86,7 +86,7 @@ async def kline(message, query=None):
                                                                time_ref='oldest')
             else:
                 stock_data, _ = await mix_data_collector_async(stock, time_begin=time_begin, time_end=time_end, 
-                                                               time_ref='latest')
+                                                               time_ref='created')
             plot_kline(stock_data=stock_data, title=f'kline of {stock.code}',
                        plot_type='line', volume=False, macd=macd, output=buf)
         else:        
