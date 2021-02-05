@@ -77,6 +77,20 @@ class Stock:
         m.update(s.encode())
         return m.hexdigest()
 
+    def collect_data(self, time_begin='19900101', time_end='20991231'):
+        stock_url = eastmoney_base.format(market=self.market_id, 
+                                          bench_code=self.code, 
+                                          time_begin=time_begin, 
+                                          time_end=time_end)
+        try:
+            stock_data = pd.DataFrame(map(lambda x: x.split(','), 
+                                        requests.get(stock_url).json()["data"]["klines"]))
+        except TypeError as e:
+            raise QueryError("Can't find kline data") from e
+        stock_data.columns = ["date", "open", "close", "high", "low", "volume", "money", "change"]
+        stock_data["date"] = pd.to_datetime(stock_data["date"])
+        return stock_data
+
     def __repr__(self):
         return "<Stock code={0.code!r} name={0.name!r} market_id={0.market_id!r} type_id={0.type_id!r}>".format(self)
     def __str__(self):
@@ -262,20 +276,6 @@ def stock_query(keyword, filter_md5=None, filter_code=None, echo=False):
         raise QueryError(f"Empty stock_list from \n{query_result}")
     return stock_list
 
-def data_collector(stock, time_begin='19900101', time_end='20991231'):
-    stock_url = eastmoney_base.format(market=stock.market_id, 
-                                      bench_code=stock.code, 
-                                      time_begin=time_begin, 
-                                      time_end=time_end)
-    try:
-        stock_data = pd.DataFrame(map(lambda x: x.split(','), 
-                                      requests.get(stock_url).json()["data"]["klines"]))
-    except TypeError as e:
-        raise QueryError("Can't find kline data") from e
-    stock_data.columns = ["date", "open", "close", "high", "low", "volume", "money", "change"]
-    stock_data["date"] = pd.to_datetime(stock_data["date"])
-    return stock_data
-
 # @timing
 def mix_data_collector(stock_mix, time_begin='20210101', time_end='20991231', time_ref=None):
     """
@@ -284,7 +284,7 @@ def mix_data_collector(stock_mix, time_begin='20210101', time_end='20991231', ti
     """
     if time_ref is None:
         time_ref = time_begin
-    stock_data = [data_collector(stock, time_begin=time_begin, time_end=time_end) for stock in stock_mix.stock_list]
+    stock_data = [stock.collect_data(time_begin=time_begin, time_end=time_end) for stock in stock_mix.stock_list]
     try:
         matrix_date = np.array([stock['date'].values for stock in stock_data], dtype=object)
         #TODO #17
@@ -403,6 +403,12 @@ def plot_stock_profit(stock_mix, stock_profit_ratio, title='', output=os.path.jo
     plt.savefig(output, dpi=300)
     plt.close()
 
+def plot_return_rate_anlys(collection, ref=None, excess_return=False):
+    """
+    Perform return rate anaylsis on collection of stock or stock_mix return rates, by plotting return rates in same axis. 
+    """
+    pass
+
 # async utilities
 async def data_collector_async(stock, client, time_begin='19900101', time_end='20991231'):
     stock_url = eastmoney_base.format(market=stock.market_id, 
@@ -479,7 +485,7 @@ def gen_stock_mix(mix_code, mix_name, stock_names, holding_ratios):
 
 async def main():
     # kline plot test
-    # x = data_collector(stock_query('000300', echo=True)[0], time_begin='20210101')
+    # x = stock_query('000300', echo=True)[0].collect_data(time_begin='20210101')
     # plot_kline(x, title='test_kline', plot_type='candle', volume=True, macd=True)
 
     # Query test
