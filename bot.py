@@ -232,7 +232,7 @@ async def compare(message):
     logging.info(f'{message.chat.id}: {message.text}')
 
     time_begin, _ = get_time_range(int(args.days))
-    stock_list = [stock_query(keyword, echo=True)[0] for keyword in args.stocks]
+    stock_list = [stock_query(keyword)[0] for keyword in args.stocks]
     buf = io.BytesIO()
     plot_return_rate_anlys(stock_list, date_begin=time_begin, output=buf)
     buf.seek(0)
