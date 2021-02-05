@@ -1,7 +1,7 @@
 import aiohttp
 import asyncio
 import datetime
-from functools import wraps
+from functools import wraps, reduce
 import hashlib
 import os
 import pickle
@@ -403,11 +403,39 @@ def plot_stock_profit(stock_mix, stock_profit_ratio, title='', output=os.path.jo
     plt.savefig(output, dpi=300)
     plt.close()
 
-def plot_return_rate_anlys(collection, ref=None, excess_return=False):
+def plot_return_rate_anlys(collection, date_begin, ref=None, excess_return=False, output=os.path.join(_test_path, 'compare.jpg')):
     """
-    Perform return rate anaylsis on collection of stock or stock_mix return rates, by plotting return rates in same axis. 
+    Perform return rate anaylsis on collection of stock or stock_mix, by plotting return rates in same axis. 
     """
-    pass
+    if ref is None:
+        ref_idx = 0
+    collection_rr = []
+    for stock in collection:
+        stock_kline = stock.collect_data(time_begin=date_begin).set_index('date')
+        stock_kline.index = pd.to_datetime(stock_kline.index)
+        stock_kline = stock_kline.astype(float)
+        stock_kline[stock.name] = (stock_kline['close'] - stock_kline['close'][ref_idx]) / stock_kline['close'][ref_idx]
+        collection_rr.append(stock_kline[stock.name])
+    collection_rr_df = reduce(lambda x, y: pd.merge(x, y, how='outer', on='date', sort=True), collection_rr)
+
+    # create a 'base layer' placeholder for plot
+    place_holder = np.empty(collection_rr_df.shape[0])
+    place_holder[:] = np.nan
+    collection_rr_df['close'] = collection_rr_df['low'] = collection_rr_df['open'] = collection_rr_df['high'] = place_holder
+
+    apdict = [mpf.make_addplot(collection_rr_df[stock.name]) for stock in collection]
+    kwargs = dict(type='candle', figratio=(11, 8), figscale=0.85)
+    style = mpf.make_mpf_style(base_mpf_style='yahoo', rc={'font.size':8, 'font.family': 'Source Han Sans'}, marketcolors=mc)
+    fig, axes = mpf.plot(collection_rr_df, **kwargs, 
+                         style=style, 
+                         scale_padding={'left': 0.4, 'top': 1, 'right': 1, 'bottom': 1}, 
+                         returnfig=True,
+                         ylabel='Return rate',  
+                         addplot=apdict)
+    legend = axes[0].legend([stock.name for stock in collection], prop={'size': 7}, fancybox=True, borderaxespad=0.)
+    legend.get_frame().set_alpha(0.4)
+    fig.savefig(output, dpi=300)
+    plt.close(fig)
 
 # async utilities
 async def data_collector_async(stock, client, time_begin='19900101', time_end='20991231'):
@@ -517,5 +545,9 @@ async def main():
 
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    mix_data_async, matrix_close_price_async = loop.run_until_complete(main())
+    # loop = asyncio.get_event_loop()
+    # mix_data_async, matrix_close_price_async = loop.run_until_complete(main())
+
+    stock_list = ['000300', '秋田微', '贵州茅台', '火星人', '西大门']
+    stock_list = [stock_query(keyword, echo=True)[0] for keyword in stock_list]
+    plot_return_rate_anlys(stock_list, '20201001')
