@@ -83,3 +83,17 @@ def argparse_now(message):
     args, _ = parser.parse_known_args(command[1:])
     return args
 
+def argparse_compare(message):
+    """
+    Usage: /compare [STOCK_KEYWORD [STOCK_KEYWORD ...]]
+
+    Options:
+        -h    display help message
+    """
+    command = message.split(' ')
+    parser = argparse.ArgumentParser(add_help=False, exit_on_error=False)
+    parser.add_argument('-h', dest='help', action='store_true')
+    parser.add_argument('stocks', nargs='*')
+    parser.add_argument('-d', dest='days')
+    args, _ = parser.parse_known_args(command[1:])
+    return args

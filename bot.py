@@ -12,7 +12,7 @@ from aiogram.types import InlineQuery, ParseMode, message, \
 import matplotlib.font_manager
 
 from utils import *
-from commands import argparse_kline, argparse_define, argparse_status, argparse_now
+from commands import argparse_kline, argparse_define, argparse_status, argparse_now, argparse_compare
 
 #TODO complete logging
 #TODO /compare
@@ -220,6 +220,24 @@ async def now(message):
         pass
         #TODO combined with dayline
 
+@dp.message_handler(commands=['compare'])
+async def compare(message):
+    try:
+        args = argparse_compare(message.text)
+    except argparse.ArgumentError:
+        pass 
+    if args.help:
+        await message.reply(argparse_compare.__doc__)
+        return 0
+    logging.info(f'{message.chat.id}: {message.text}')
+
+    time_begin, _ = get_time_range(int(args.days))
+    stock_list = [stock_query(keyword, echo=True)[0] for keyword in args.stocks]
+    buf = io.BytesIO()
+    plot_return_rate_anlys(stock_list, date_begin=time_begin, output=buf)
+    buf.seek(0)
+    await message.reply_photo(buf, caption='return rates from '+time_begin)
+    
 # To get photo file_id
 # @dp.message_handler(content_types=['photo'])
 # async def echo(message):
