@@ -94,6 +94,6 @@ def argparse_compare(message):
     parser = argparse.ArgumentParser(add_help=False, exit_on_error=False)
     parser.add_argument('-h', dest='help', action='store_true')
     parser.add_argument('stocks', nargs='*')
-    parser.add_argument('-d', dest='days')
+    parser.add_argument('-d', dest='days', const=120, type=int)
     args, _ = parser.parse_known_args(command[1:])
     return args
