@@ -90,7 +90,7 @@ async def kline(message, query=None):
             plot_kline(stock_data=stock_data, title=f'kline of {stock.code}',
                        plot_type='line', volume=False, macd=macd, output=buf)
         else:        
-            plot_kline(stock_data=data_collector(stock, time_begin, time_end), 
+            plot_kline(stock_data=stock.collect_data(time_begin, time_end), 
                        title=f'kline of {stock.code}', macd=macd, output=buf)
         buf.seek(0)
         if args.md5:
