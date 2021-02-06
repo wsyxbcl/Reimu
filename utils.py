@@ -39,8 +39,7 @@ stock_type = {'1': "沪A",
               '25': "科创板", 
               '2': "深A", 
               '8': "基金", 
-              '5': "指数",
-              '19': "港股"}
+              '5': "指数"}
 
 # kline color style
 mc = {'candle': {'up': '#fe3032', 'down': '#00b060'},
@@ -263,7 +262,7 @@ def stock_query(keyword, filter_md5=None, filter_code=None, echo=False):
     #     print(query_result)
     stock_list = [Stock(code=x['Code'], name=x['Name'], market_id=x['MktNum'], type_id=x['SecurityType']) 
                   for x in query_result if x['MktNum'] in stock_market and \
-                                           (x['SecurityType'] in stock_type or x['Classify'] == "UsStock") and \
+                                           (x['SecurityType'] in stock_type or x['Classify'] == "UsStock" or x['Classify'] == "HK") and \
                                            x["SecurityTypeName"] != "曾用"]
     if filter_md5:
         stock_list = [stock for stock in stock_list if stock.md5 == filter_md5]
