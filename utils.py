@@ -264,7 +264,7 @@ def stock_query(keyword, filter_md5=None, filter_code=None, echo=False):
     #     print(query_result)
     stock_list = [Stock(code=x['Code'], name=x['Name'], market_id=x['MktNum'], type_id=x['SecurityType']) 
                   for x in query_result if x['MktNum'] in stock_market and \
-                                           (x['SecurityType'] in stock_type or x['Classify'] == "UsStock" and \
+                                           (x['SecurityType'] in stock_type or x['Classify'] == "UsStock") and \
                                            x["SecurityTypeName"] != "曾用"]
     if filter_md5:
         stock_list = [stock for stock in stock_list if stock.md5 == filter_md5]
