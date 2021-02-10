@@ -393,6 +393,7 @@ def plot_stock_profit(stock_mix, stock_profit_ratio, title='', output=os.path.jo
     stock_df.sort_values('profit', inplace=True)
     stock_df.reset_index(inplace=True)
 
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
     matplotlib.rcParams['font.family'] = ['Source Han Sans']
     plt.figure()
     plt.hlines(y=stock_df.index, xmin=0, xmax=stock_df.profit, color=stock_df.colors, alpha=0.4, linewidth=5)
