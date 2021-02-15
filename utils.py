@@ -481,13 +481,13 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
             stock_kline = stock.set_index('date')
             stock_kline.index = pd.to_datetime(stock_kline.index)
             stock_kline = stock_kline.astype(float)
-            stock_kline[str(i)] = stock_kline['close']
-            collection_close_price.append(stock_kline[str(i)])
+            stock_kline[[stock.code for stock in stock_mix.stock_list][i]] = stock_kline['close']
+            collection_close_price.append(stock_kline[[stock.code for stock in stock_mix.stock_list][i]])
         # dealing with trade suspention
         collection_close_price_df = reduce(lambda x, y: pd.merge(x, y, how='outer', on='date', sort=True), collection_close_price)
-        collection_close_price_df.fillna(method='ffill')
+        collection_close_price_df = collection_close_price_df.fillna(method='ffill')
         matrix_date = [collection_close_price_df.index.values]
-        matrix_close_price = collection_close_price_df.to_numpy()
+        matrix_close_price = np.transpose(collection_close_price_df.to_numpy())
 
     # only need close price here
     if time_ref == 'oldest':
