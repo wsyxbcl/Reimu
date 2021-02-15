@@ -467,21 +467,28 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
     async with aiohttp.ClientSession() as client: 
         # stock_data: list of pd.df
         stock_data = await asyncio.gather(*[data_collector_async(stock, client, time_begin=time_begin, time_end=time_end) for stock in stock_mix.stock_list])
-    # Checking whether the dates are consistent
-    # print(([len(stock['date'].values) for stock in stock_data]))
-    # print([stock.code for stock in stock_mix.stock_list])
+    # Checking whether the dates are consistent, trading suspention handled
     try:
         # matrix_date: (n_stock, n_days) np.array, type: numpy.datetime64
         matrix_date = np.array([stock['date'].values for stock in stock_data])
-        if not np.equal(matrix_date[0], matrix_date).all():
-            print("date inconsistent")
+        matrix_close_price = np.array([np.array(stock['close']) for stock in stock_data]).astype(float)
     except ValueError:
         # operands could not be broadcast together
         print("Mix data can't broadcast")
-        raise
+        # a more robust solution #TODO to be tested, can replace current flow
+        collection_close_price = []
+        for i, stock in enumerate(stock_data):
+            stock_kline = stock.set_index('date')
+            stock_kline.index = pd.to_datetime(stock_kline.index)
+            stock_kline = stock_kline.astype(float)
+            stock_kline[str(i)] = stock_kline['close']
+            collection_close_price.append(stock_kline[str(i)])
+        # dealing with trade suspention
+        collection_close_price_df = reduce(lambda x, y: pd.merge(x, y, how='outer', on='date', sort=True), collection_close_price)
+        collection_close_price_df.fillna(method='ffill')
+        matrix_date = [collection_close_price_df.index.values]
+        matrix_close_price = collection_close_price_df.to_numpy()
 
-    matrix_close_price = np.array([np.array(stock['close']) for stock in stock_data]).astype(float)
-    # matrix_volume = np.array([np.array(stock['volume']) for stock in stock_data]).astype(float)
     # only need close price here
     if time_ref == 'oldest':
         date_ref_index = 0
