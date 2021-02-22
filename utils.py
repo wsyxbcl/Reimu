@@ -382,6 +382,7 @@ def plot_profitline(stock_data, profit_ratio, title='', output=os.path.join(_tes
                          style=style, 
                          scale_padding={'left': 0.1, 'top': 1, 'right': 1, 'bottom': 1}, 
                          returnfig=True)
+    axes[0].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1.0))
     axes[0].set_title(title)
     fig.savefig(output, dpi=300)
     plt.close(fig)
@@ -400,6 +401,7 @@ def plot_stock_profit(stock_mix, stock_profit_ratio, title='', output=os.path.jo
     plt.hlines(y=stock_df.index, xmin=0, xmax=stock_df.profit, color=stock_df.colors, alpha=0.4, linewidth=5)
 
     plt.gca().set(ylabel='Stock', xlabel='Return Rate')
+    axes[0].xaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1.0))
     plt.yticks(stock_df.index, stock_df.name, fontsize=8)
     plt.title(title)
     plt.grid(linestyle='--', alpha=0.5)
@@ -432,9 +434,10 @@ def plot_return_rate_anlys(collection, date_begin, ref=None, excess_return=False
     fig, axes = mpf.plot(collection_rr_df, **kwargs, 
                          style=style, 
                          scale_padding={'left': 0.4, 'top': 1, 'right': 1, 'bottom': 1}, 
-                         returnfig=True,
-                         ylabel='Return rate',  
+                         returnfig=True, 
+                         ylabel='Return rate', 
                          addplot=apdict)
+    axes[0].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1.0))
     legend = axes[0].legend([stock.name for stock in collection], prop={'size': 7}, fancybox=True, borderaxespad=0.)
     legend.get_frame().set_alpha(0.4)
     fig.savefig(output, dpi=300)
@@ -566,4 +569,4 @@ if __name__ == '__main__':
 
     stock_list = ['000300', '秋田微', '贵州茅台', '火星人', '西大门']
     stock_list = [stock_query(keyword, echo=True)[0] for keyword in stock_list]
-    plot_return_rate_anlys(stock_list, '20201001')
+    plot_return_rate_anlys(stock_list, '20201001', output=os.path.join(_test_path, 'compare_percentage.jpg'))
