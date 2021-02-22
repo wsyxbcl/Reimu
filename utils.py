@@ -401,7 +401,7 @@ def plot_stock_profit(stock_mix, stock_profit_ratio, title='', output=os.path.jo
     plt.hlines(y=stock_df.index, xmin=0, xmax=stock_df.profit, color=stock_df.colors, alpha=0.4, linewidth=5)
 
     plt.gca().set(ylabel='Stock', xlabel='Return Rate')
-    axes[0].xaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1.0))
+    plt.gca().xaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1.0))
     plt.yticks(stock_df.index, stock_df.name, fontsize=8)
     plt.title(title)
     plt.grid(linestyle='--', alpha=0.5)
