@@ -33,7 +33,7 @@ _test_stock_HK = ["腾讯控股", "美团", "小米集团", "舜宇光学科技"
 # For filtering eastmoney searchapi
 # "TypeUS" seems to be a strong factor, but with uncertain meaning 
 # MktNum: MarketName
-stock_market =  {'0': "SZ", '1': "SH", '105': "US", '106': "US", '107': "US", '156': "US", '100': "_UI", '116': "HK"} #TODO figure out US market
+stock_market =  {'0': "SZ", '1': "SH", '105': "US", '106': "US", '107': "US", '156': "US", '100': "US", '116': "HK"} #TODO figure out US market
 
 # SecurityType: SecurityTypeName
 stock_type = {'1': "沪A", 
