@@ -137,7 +137,7 @@ async def define(message):
         holding_ratio = [1 / len(stock_list)] * len(stock_list)
     else:
         holding_ratio = [float(w) for w in args.weights]
-    stock_mix = gen_stock_mix(code, name, stock_names=stock_list, holding_ratios=holding_ratio)
+    stock_mix = gen_stock_mix(code, name, stock_names=stock_list, holding_ratios=holding_ratio, create_time=datetime.datetime.utcnow())
     stock_mix.save()
     logging.info(f'creating stock mix:{stock_mix}')
     buf = io.BytesIO()

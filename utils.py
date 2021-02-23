@@ -102,7 +102,7 @@ class Stock_mix:
     """
     Mixed stocks, Inherence not considered currently 
     """
-    def __init__(self, code, name, stock_list, holding_ratio, create_time=datetime.datetime.utcnow()):
+    def __init__(self, code, name, stock_list, holding_ratio, create_time):
         self.code = code
         self.name = name
         self.stock_list = stock_list
@@ -516,7 +516,7 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
     return mix_data, matrix_close_price # to be used in profit analysis
 
 # generate Stock_mix
-def gen_stock_mix(mix_code, mix_name, stock_names, holding_ratios):
+def gen_stock_mix(mix_code, mix_name, stock_names, holding_ratios, create_time):
     stock_list = []
     for stock_name in stock_names:
         query_result = stock_query(stock_name, filter_code=True, echo=True)
@@ -525,7 +525,7 @@ def gen_stock_mix(mix_code, mix_name, stock_names, holding_ratios):
         else:
             print("multiple query results on "+stock_name)
     stock_mix = Stock_mix(code=mix_code, name=mix_name, stock_list=stock_list, 
-                          holding_ratio=holding_ratios)
+                          holding_ratio=holding_ratios, create_time=create_time)
     stock_mix.save()
     print(stock_mix)
     return stock_mix
