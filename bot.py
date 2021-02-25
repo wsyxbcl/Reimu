@@ -138,7 +138,7 @@ async def define(message):
     logging.info(f'creating stock mix:{stock_mix}')
     if type(stock_mix) is dict:
         candidate_list = stock_mix
-        await message.reply(str(candidate_list))
+        await message.reply("Try using code to specify following stocks:\n"+str(candidate_list), parse_mode=ParseMode.MARKDOWN)
         return 2
     buf = io.BytesIO()
     stock_mix.draw(output=buf)

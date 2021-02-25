@@ -521,7 +521,7 @@ def gen_stock_mix(mix_code, mix_name, stock_names, holding_ratios, create_time):
         if len(query_result) == 1:
             stock_list.append(query_result[0])
         else:
-            candidate_list[stock_name] = query_result
+            candidate_list[stock_name] = [str(stock) for stock in query_result]
             # print("multiple query results on "+stock_name)
     if candidate_list:
         return candidate_list
