@@ -22,7 +22,7 @@ _test_path = './demo'
 # fqt is for split-adjusted price
 # eastmoney_base = "http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={market}.{bench_code}&fields1=f1%2Cf2%2Cf3%2Cf4%2Cf5&fields2=f51%2Cf52%2Cf53%2Cf54%2Cf55%2Cf56%2Cf57%2Cf58&klt=101&fqt=0&beg={time_begin}&end={time_end}"
 eastmoney_base = "http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={market}.{bench_code}&fields1=f1%2Cf2%2Cf3%2Cf4%2Cf5&fields2=f51%2Cf52%2Cf53%2Cf54%2Cf55%2Cf56%2Cf57%2Cf58&klt=101&fqt=1&beg={time_begin}&end={time_end}"
-
+eastmoney_base_live = "http://push2.eastmoney.com/api/qt/stock/trends2/get?fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57,f58&ut=fa5fd1943c7b386f172d6893dbfba10b&iscr=0&ndays=1&secid={market}.{bench_code}"
 
 # "沪市（主板、科创板、基金）、深市（主板、中小板、创业板、基金）", guided by Maple
 # http://www.szse.cn/
@@ -78,17 +78,29 @@ class Stock:
         m.update(s.encode())
         return m.hexdigest()
 
-    def collect_data(self, time_begin='19900101', time_end='20991231'):
+    def collect_data_daily(self, time_begin='19900101', time_end='20991231'):
         stock_url = eastmoney_base.format(market=self.market_id, 
                                           bench_code=self.code, 
                                           time_begin=time_begin, 
                                           time_end=time_end)
         try:
             stock_data = pd.DataFrame(map(lambda x: x.split(','), 
-                                        requests.get(stock_url).json()["data"]["klines"]))
+                                      requests.get(stock_url).json()["data"]["klines"]))
         except TypeError as e:
             raise QueryError("Can't find kline data") from e
         stock_data.columns = ["date", "open", "close", "high", "low", "volume", "money", "change"]
+        stock_data["date"] = pd.to_datetime(stock_data["date"])
+        return stock_data
+
+    def collect_data_live(self):
+        stock_url = eastmoney_base_live.format(market=self.market_id, 
+                                               bench_code=self.code)
+        try:
+            stock_data = pd.DataFrame(map(lambda x: x.split(','), 
+                                      requests.get(stock_url).json()["data"]["trends"]))
+        except TypeError as e:
+            raise QueryError("Can't find kline data") from e
+        stock_data.columns = ["date", "open", "close", "high", "low", "volume", "money", "change"] # follow mpf convention
         stock_data["date"] = pd.to_datetime(stock_data["date"])
         return stock_data
 
@@ -284,7 +296,7 @@ def mix_data_collector(stock_mix, time_begin='20210101', time_end='20991231', ti
     """
     if time_ref is None:
         time_ref = time_begin
-    stock_data = [stock.collect_data(time_begin=time_begin, time_end=time_end) for stock in stock_mix.stock_list]
+    stock_data = [stock.collect_data_daily(time_begin=time_begin, time_end=time_end) for stock in stock_mix.stock_list]
     try:
         matrix_date = np.array([stock['date'].values for stock in stock_data], dtype=object)
         #TODO #17
@@ -413,7 +425,7 @@ def plot_return_rate_anlys(collection, date_begin, ref=None, excess_return=False
         ref_idx = 0
     collection_rr = []
     for stock in collection:
-        stock_kline = stock.collect_data(time_begin=date_begin).set_index('date')
+        stock_kline = stock.collect_data_daily(time_begin=date_begin).set_index('date')
         stock_kline.index = pd.to_datetime(stock_kline.index)
         stock_kline = stock_kline.astype(float)
         stock_kline[stock.name] = (stock_kline['close'] - stock_kline['close'][ref_idx]) / stock_kline['close'][ref_idx]
@@ -570,7 +582,5 @@ async def main():
 if __name__ == '__main__':
     # loop = asyncio.get_event_loop()
     # mix_data_async, matrix_close_price_async = loop.run_until_complete(main())
-
-    stock_list = ['000300', '秋田微', '贵州茅台', '火星人', '西大门']
-    stock_list = [stock_query(keyword, echo=True)[0] for keyword in stock_list]
-    plot_return_rate_anlys(stock_list, '20201001', output=os.path.join(_test_path, 'compare_percentage.jpg'))
+    x = stock_query('哔哩', echo=True)[0].collect_data_live()
+    plot_kline(x, title='test_live', plot_type='line', volume=True, macd=False)
