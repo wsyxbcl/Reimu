@@ -14,9 +14,6 @@ import matplotlib.font_manager
 from utils import *
 from commands import argparse_kline, argparse_define, argparse_status, argparse_now, argparse_compare
 
-#TODO complete logging
-#TODO /compare
-#TODO /realtime
 
 _market_emoji =  {"SZ": '🇨🇳', "SH": '🇨🇳', "US": '🇺🇸', "HK": '🇭🇰'}
 # file id for the picture, i.e. placeholder of inline keyboard
@@ -211,7 +208,7 @@ async def now(message):
         profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, 
                                                                       date_ref='latest')
         plot_stock_profit(stock_mix, stock_profit_ratio, 
-                          title=f'{stock_mix.name} Latest return rate', #TODO 
+                          title=f'{stock_mix.name} Latest return rate', #TODO add a timestamp
                           output=buf)
         buf.seek(0)
         await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+\

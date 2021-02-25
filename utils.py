@@ -24,7 +24,6 @@ _test_path = './demo'
 eastmoney_base = "http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={market}.{bench_code}&fields1=f1%2Cf2%2Cf3%2Cf4%2Cf5&fields2=f51%2Cf52%2Cf53%2Cf54%2Cf55%2Cf56%2Cf57%2Cf58&klt=101&fqt=1&beg={time_begin}&end={time_end}"
 
 
-#TODO still need a check
 # "沪市（主板、科创板、基金）、深市（主板、中小板、创业板、基金）", guided by Maple
 # http://www.szse.cn/
 # http://www.sse.com.cn/
@@ -33,7 +32,7 @@ _test_stock_HK = ["腾讯控股", "美团", "小米集团", "舜宇光学科技"
 # For filtering eastmoney searchapi
 # "TypeUS" seems to be a strong factor, but with uncertain meaning 
 # MktNum: MarketName
-stock_market =  {'0': "SZ", '1': "SH", '105': "US", '106': "US", '107': "US", '156': "US", '100': "US", '116': "HK"} #TODO figure out US market
+stock_market =  {'0': "SZ", '1': "SH", '105': "US", '106': "US", '107': "US", '156': "US", '100': "US", '116': "HK"}
 
 # SecurityType: SecurityTypeName
 stock_type = {'1': "沪A", 
@@ -226,8 +225,6 @@ def timing_async(func):
     return wrapper
 
 # Data collecting utilities
-#TODO minus plot -> /compare command
-#TODO real time price -> /realtime command
 def stock_query(keyword, filter_md5=None, filter_code=None, echo=False):
     """
     borrowed from https://github.com/pengnanxiaomeimei/stock_data_analysis/
@@ -322,7 +319,6 @@ def mix_data_collector(stock_mix, time_begin='20210101', time_end='20991231', ti
 
 # Plot utilities
 def plot_kline(stock_data, title='', plot_type='candle', volume=True, macd=False, output=os.path.join(_test_path, 'kline.jpg')):
-    #TODO analysis, e.g. MACD, RSI
     # issue#316 of mplfinance might be helpful
     stock_kline = stock_data.set_index("date")
     stock_kline.index = pd.to_datetime(stock_kline.index)
@@ -478,8 +474,8 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
         matrix_close_price = np.array([np.array(stock['close']) for stock in stock_data]).astype(float)
     except ValueError:
         # operands could not be broadcast together
-        print("Mix data can't broadcast")
-        # a more robust solution #TODO to be tested, can replace current flow
+        # print("Mix data can't broadcast")
+        # a more robust solution #TODO can replace current flow
         collection_close_price = []
         for i, stock in enumerate(stock_data):
             stock_kline = stock.set_index('date')
@@ -539,7 +535,7 @@ async def main():
     # _query_test(_test_stock_code_CN)
     # _query_test(_test_stock_HK)
     # Stock_mix test
-    # enl_stock_name = [] # a list of query keywords (#TODO check: result must be unique)
+    # enl_stock_name = [] # a list of query keywords
     # enl_stock_ratio = [1 / len(enl_stock_name)] * len(enl_stock_name)
     # enl_stock_mix = gen_stock_mix(mix_code='enltest', mix_name="enl001", 
     #                               stock_names=enl_stock_name, holding_ratios=enl_stock_ratio)
