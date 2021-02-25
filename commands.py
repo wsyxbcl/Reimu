@@ -71,14 +71,16 @@ def argparse_now(message):
     """
     Usage: /now [OPTION] PORTFOLIO_CODE
     Plot today's return rate for a portfolio (currently valid for trading days only)
-
+           /now [OPTION] STOCK_KEYWORD
+    Get real-time chart for STOCK_KEYWORD
     Options:
-        -h    display help message
+        -h          display help message
+        -e <md5>    md5 match(md5), NOT FOR USERS
     """
-    #TODO Get real-time chart for STOCK_KEYWORD, /now [OPTION] STOCK_KEYWORD
     command = message.split(' ')
     parser = argparse.ArgumentParser(add_help=False, exit_on_error=False)
     parser.add_argument('-h', dest='help', action='store_true')
+    parser.add_argument('-e', dest='md5')
     parser.add_argument('stock', nargs='?')
     args, _ = parser.parse_known_args(command[1:])
     return args

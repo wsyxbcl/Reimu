@@ -94,7 +94,7 @@ async def kline(message, query=None):
             # Not open to user input, can only result from inline keyboard callback
             await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=stock.code+' '+stock.name))
         else:
-            await message.reply_photo(buf, caption=stock.code+' '+stock.name, reply_markup=types.ReplyKeyboardRemove())
+            await message.reply_photo(buf, caption=stock.code+' '+stock.name)
     else:
         # get user's selection from inline keyboard
         keyboard_markup = types.InlineKeyboardMarkup()
@@ -200,25 +200,52 @@ async def now(message):
         return 0
     stock_list = stock_query(keyword=args.stock)
     logging.info(f'query result:{stock_list}')
-    if len(stock_list) == 1 and type(stock_mix := stock_list[0]) is Stock_mix:
-        try:
-            time_begin, _ = get_time_range(int(message.text.split()[2]))
-        except IndexError:
-            time_begin = stock_mix.create_time.strftime("%Y%m%d")
+    if len(stock_list) == 1
         buf = io.BytesIO()
-        datetime_ref = (datetime.datetime.utcnow() - datetime.timedelta(days=30)).strftime("%Y%m%d") # refer to last trading day
-        stock_data, matrix_close_price = await mix_data_collector_async(stock_mix, time_begin=datetime_ref)
-        profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, 
-                                                                      date_ref='latest')
-        plot_stock_profit(stock_mix, stock_profit_ratio, 
-                          title=f'{stock_mix.name} Latest return rate', #TODO add a timestamp
-                          output=buf)
-        buf.seek(0)
-        await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+\
-                                               "\nLatest return rate: {:.2%}".format(profit_ratio[-1]))
+        stock = stock_list[0]
+        if type(stock_mix := stock_list[0]) is Stock_mix:
+            try:
+                time_begin, _ = get_time_range(int(message.text.split()[2]))
+            except IndexError:
+                time_begin = stock_mix.create_time.strftime("%Y%m%d")
+            datetime_ref = (datetime.datetime.utcnow() - datetime.timedelta(days=30)).strftime("%Y%m%d") # refer to last trading day
+            stock_data, matrix_close_price = await mix_data_collector_async(stock_mix, time_begin=datetime_ref)
+            profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, 
+                                                                        date_ref='latest')
+            plot_stock_profit(stock_mix, stock_profit_ratio, 
+                            title=f'{stock_mix.name} Latest return rate', #TODO add a timestamp
+                            output=buf)
+            buf.seek(0)
+            await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+\
+                                                "\nLatest return rate: {:.2%}".format(profit_ratio[-1]))
+        else:
+            plot_kline(stock_data=stock.collect_data_live(), 
+                       title=f'live price of {stock.code}', plot_type='line', volume=True, macd=False)
+            buf.seek(0)
+            if args.md5:
+                # Not open to user input, can only result from inline keyboard callback
+                await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=stock.code+' '+stock.name))
+            else:
+                await message.reply_photo(buf, caption=stock.code+' '+stock.name)
     else:
-        pass
-        #TODO combined with dayline
+        # get user's selection from inline keyboard
+        keyboard_markup = types.InlineKeyboardMarkup()
+        for stock in stock_list:
+            stock_emoji = _market_emoji[stock.market]
+            keyboard_markup.row(types.InlineKeyboardButton(' '.join([stock_emoji, stock.code, stock.name]), 
+                                callback_data=' '.join(filter(None, ['/now', '-e', stock.md5, args.keyword[0]]))))
+        # add exit button
+        keyboard_markup.row(types.InlineKeyboardButton('exit', callback_data='exit'))
+        await message.reply_photo(_file_id_inline, caption="Find multiple results", reply_markup=keyboard_markup)
+
+@dp.callback_query_handler(lambda cb: '/now' in cb.data)
+@dp.callback_query_handler(text='exit')
+async def inline_now_answer_callback_handler(query):
+    logging.info(f'{query.inline_message_id}: {query.data}')
+    if query.data == 'exit':
+        await query.message.delete()
+        return 1
+    await now(message.Message(text=query.data), query=query)
 
 @dp.message_handler(commands=['compare'])
 async def compare(message):
