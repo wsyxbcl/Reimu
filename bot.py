@@ -135,8 +135,11 @@ async def define(message):
     else:
         holding_ratio = [float(w) for w in args.weights]
     stock_mix = gen_stock_mix(code, name, stock_names=stock_list, holding_ratios=holding_ratio, create_time=datetime.datetime.utcnow())
-    stock_mix.save()
     logging.info(f'creating stock mix:{stock_mix}')
+    if type(stock_mix) is dict:
+        candidate_list = stock_mix
+        await message.reply(str(candidate_list))
+        return 2
     buf = io.BytesIO()
     stock_mix.draw(output=buf)
     buf.seek(0)
