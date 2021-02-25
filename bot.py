@@ -189,8 +189,8 @@ async def status(message):
         #TODO if there will be company status
 
 @dp.message_handler(commands=['now'])
-async def now(message):
-    logging.info(f'{message.chat.id}: {message.text}')
+async def now(message, query=None):
+    logging.info(f'{message.text}')
     try:
         args = argparse_now(message.text)
     except argparse.ArgumentError:
@@ -198,9 +198,12 @@ async def now(message):
     if args.help:
         await message.reply(argparse_now.__doc__)
         return 0
-    stock_list = stock_query(keyword=args.stock)
+    try:
+        stock_list = stock_query(keyword=args.keyword, filter_md5=args.md5)
+    except IndexError:
+        raise
     logging.info(f'query result:{stock_list}')
-    if len(stock_list) == 1
+    if len(stock_list) == 1:
         buf = io.BytesIO()
         stock = stock_list[0]
         if type(stock_mix := stock_list[0]) is Stock_mix:
@@ -220,7 +223,7 @@ async def now(message):
                                                 "\nLatest return rate: {:.2%}".format(profit_ratio[-1]))
         else:
             plot_kline(stock_data=stock.collect_data_live(), 
-                       title=f'live price of {stock.code}', plot_type='line', volume=True, macd=False)
+                       title=f'live price of {stock.code}', plot_type='line', volume=True, macd=False, output=buf)
             buf.seek(0)
             if args.md5:
                 # Not open to user input, can only result from inline keyboard callback
@@ -233,7 +236,7 @@ async def now(message):
         for stock in stock_list:
             stock_emoji = _market_emoji[stock.market]
             keyboard_markup.row(types.InlineKeyboardButton(' '.join([stock_emoji, stock.code, stock.name]), 
-                                callback_data=' '.join(filter(None, ['/now', '-e', stock.md5, args.keyword[0]]))))
+                                callback_data=' '.join(filter(None, ['/now', '-e', stock.md5, args.keyword]))))
         # add exit button
         keyboard_markup.row(types.InlineKeyboardButton('exit', callback_data='exit'))
         await message.reply_photo(_file_id_inline, caption="Find multiple results", reply_markup=keyboard_markup)
