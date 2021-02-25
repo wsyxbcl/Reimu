@@ -486,7 +486,9 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
             collection_close_price.append(stock_kline[[stock.code for stock in stock_mix.stock_list][i]])
         # dealing with trade suspention
         collection_close_price_df = reduce(lambda x, y: pd.merge(x, y, how='outer', on='date', sort=True), collection_close_price)
+        # print(collection_close_price_df)
         collection_close_price_df = collection_close_price_df.fillna(method='ffill')
+        # print(collection_close_price_df)
         matrix_date = [collection_close_price_df.index.values]
         matrix_close_price = np.transpose(collection_close_price_df.to_numpy())
 
@@ -504,12 +506,13 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
     stock_share_ratios = stock_mix.holding_ratio / close_price_ref
     value_mix = np.average(matrix_close_price, axis=0, weights=stock_share_ratios) 
     value_mix = value_mix / value_mix[date_ref_index] # norm to 1
-    mix_data = stock_data[0].copy()
-    mix_data = mix_data.drop(['money', 'change', 'volume'], axis=1)
+    mix_data = pd.DataFrame(matrix_date[0], columns=['date'])
     mix_data['close'] = value_mix
     # mix_data['volume'] = volume_mix
     # Data redundancy, rather inelegant here, might go PR on mplfinance (or simplily using plot instead)
-    mix_data['low'] = mix_data['open'] = mix_data['high'] = np.zeros(len(stock_data[0]['date']))
+    place_holder = np.empty(len(mix_data))
+    place_holder[:] = np.nan
+    mix_data['low'] = mix_data['open'] = mix_data['high'] = place_holder
     return mix_data, matrix_close_price # to be used in profit analysis
 
 # generate Stock_mix
