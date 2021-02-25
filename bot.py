@@ -223,7 +223,7 @@ async def now(message, query=None):
                                                 "\nLatest return rate: {:.2%}".format(profit_ratio[-1]))
         else:
             plot_kline(stock_data=stock.collect_data_live(), 
-                       title=f'live price of {stock.code}', plot_type='line', volume=True, macd=False, output=buf)
+                       title=f'Live price of {stock.code} (UTC+8)', plot_type='line', volume=True, macd=False, output=buf)
             buf.seek(0)
             if args.md5:
                 # Not open to user input, can only result from inline keyboard callback
