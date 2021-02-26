@@ -495,7 +495,7 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
     # print(collection_close_price_df)
     collection_close_price_df = collection_close_price_df.fillna(method='ffill')
     # print(collection_close_price_df)
-    matrix_date = [collection_close_price_df.index.values]
+    dates_array = collection_close_price_df.index.values
     matrix_close_price = np.transpose(collection_close_price_df.to_numpy())
 
     # only need close price here
@@ -505,14 +505,22 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
         date_ref_index = -1
     elif time_ref == 'created':
         date_created_stamp = pd.to_datetime(stock_mix.create_time.date())
-        date_ref_index = np.where(matrix_date[0] == date_created_stamp)[0][0]
+        for i in range(10):
+            # range(10) is to match the buffer time for non-trading days
+            # for Stock_mix created on non-trading days
+            # we slide the dates_array by step of 1 day to find the nearest previous trading day
+            try:
+                date_ref_index = np.where((dates_array - np.timedelta64(n, 'D')) == date_created_stamp)[0][0]
+                break
+            except IndexError:
+                pass
     else:
         raise ValueError
     close_price_ref = matrix_close_price[:, date_ref_index]
     stock_share_ratios = stock_mix.holding_ratio / close_price_ref
     value_mix = np.average(matrix_close_price, axis=0, weights=stock_share_ratios) 
     value_mix = value_mix / value_mix[date_ref_index] # norm to 1
-    mix_data = pd.DataFrame(matrix_date[0], columns=['date'])
+    mix_data = pd.DataFrame(dates_array, columns=['date'])
     mix_data['close'] = value_mix
     # mix_data['volume'] = volume_mix
     # Data redundancy, rather inelegant here, might go PR on mplfinance (or simplily using plot instead)

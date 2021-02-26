@@ -164,7 +164,7 @@ async def status(message):
             buf.seek(0)
             await message.reply_photo(buf, caption=str(stock_mix))
         else:
-            # add buffer for non-trading days
+            # add buffer time for non-trading days
             time_created = stock_mix.create_time.strftime("%Y%m%d")
             time_begin = (stock_mix.create_time - datetime.timedelta(days=9)).strftime("%Y%m%d")
             time_now = datetime.datetime.utcnow().strftime("%Y%m%d %H:%M:%S")
