@@ -510,7 +510,7 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
             # for Stock_mix created on non-trading days
             # we slide the dates_array by step of 1 day to find the nearest previous trading day
             try:
-                date_ref_index = np.where((dates_array - np.timedelta64(n, 'D')) == date_created_stamp)[0][0]
+                date_ref_index = np.where((dates_array - np.timedelta64(i, 'D')) == date_created_stamp)[0][0]
                 break
             except IndexError:
                 pass
