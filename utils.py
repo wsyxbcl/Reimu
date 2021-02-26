@@ -97,7 +97,7 @@ class Stock:
                                                bench_code=self.code)
         try:
             stock_data = pd.DataFrame(map(lambda x: x.split(','), 
-                                      requests.get(stock_url).json()["data"]["trends"]))
+                                      requests.get(stock_url, timeout=3).json()["data"]["trends"]))
         except TypeError as e:
             raise QueryError("Can't find kline data") from e
         stock_data.columns = ["date", "open", "close", "high", "low", "volume", "money", "change"] # follow mpf convention
@@ -582,5 +582,7 @@ async def main():
 if __name__ == '__main__':
     # loop = asyncio.get_event_loop()
     # mix_data_async, matrix_close_price_async = loop.run_until_complete(main())
-    x = stock_query('哔哩', echo=True)[0].collect_data_live()
+    while True:
+        n = input()
+        x = stock_query('哔哩', echo=True)[0].collect_data_live()
     plot_kline(x, title='test_live', plot_type='line', volume=True, macd=False)
