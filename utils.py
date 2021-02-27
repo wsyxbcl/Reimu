@@ -83,9 +83,6 @@ class Stock:
         """
         retrieve company_info from eastmoney (currently only the url is returned)
         """
-        http://emweb.eastmoney.com/PC_USF10/CompanyInfo/index?color=w&code=BILI
-        http://emweb.eastmoney.com/PC_HKF10/CompanyProfile/index?color=w&code=00700
-        http://emweb.eastmoney.com/CompanySurvey/Index?color=w&code=SH601318
         market = stock_market[self.market_id]
         if market == 'SZ' or market == 'SH':
             if self.type_id in ('1', '2', '25'):
