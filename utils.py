@@ -89,7 +89,8 @@ class Stock:
         elif market in ('AMEX', 'NYSE', 'NASDAQ', 'HK'):
             #TODO refine stock_type in US/HK market
             h5_fc = self.code+{'HK': '', 'AMEX': '.A', 'NYSE': '.N', 'NASDAQ': '.O'}[market]
-            return f"https://emh5.eastmoney.com/{market}/index.html?fc={h5_fc}&color=w"
+            h5_mkt = ({'HK': 'HK'} | dict.fromkeys(['AMEX', 'NYSE', 'NASDAQ'], 'US'))[market]
+            return f"https://emh5.eastmoney.com/{h5_mkt}/index.html?fc={h5_fc}&color=w"
         else:
             return ''
             
