@@ -73,6 +73,8 @@ async def kline(message, query=None):
 
     if len(stock_list) == 1:
         stock = stock_list[0]
+        if stock_info := stock.company_info:
+            stock_info = f"[INFO]({stock_info})"
         buf = io.BytesIO()
         if type(stock) == Stock_mix:
             time_mix_created = stock.create_time.strftime("%Y%m%d")
@@ -92,9 +94,9 @@ async def kline(message, query=None):
         buf.seek(0)
         if args.md5:
             # Not open to user input, can only result from inline keyboard callback
-            await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=stock.code+' '+stock.name))
+            await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=' '.join([stock.code, stock.name, stock_info]), parse_mode=ParseMode.MARKDOWN))
         else:
-            await message.reply_photo(buf, caption=stock.code+' '+stock.name)
+            await message.reply_photo(buf, caption=' '.join([stock.code, stock.name, stock_info]), parse_mode=ParseMode.MARKDOWN)
     else:
         # get user's selection from inline keyboard
         keyboard_markup = types.InlineKeyboardMarkup()

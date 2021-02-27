@@ -35,6 +35,7 @@ _test_stock_HK = ["腾讯控股", "美团", "小米集团", "舜宇光学科技"
 stock_market =  {'0': "SZ", '1': "SH", '105': "US", '106': "US", '107': "US", '156': "US", '100': "US", '116': "HK"}
 
 # SecurityType: SecurityTypeName
+#TODO refine stock_type in US/HK market
 stock_type = {'1': "沪A", 
               '25': "科创板", 
               '2': "深A", 
@@ -77,7 +78,24 @@ class Stock:
         s = ''.join([self.code, self.name, self.market_id, self.type_id])
         m.update(s.encode())
         return m.hexdigest()
-
+    @property
+    def company_info(self):
+        """
+        retrieve company_info from eastmoney (currently only the url is returned)
+        """
+        http://emweb.eastmoney.com/PC_USF10/CompanyInfo/index?color=w&code=BILI
+        http://emweb.eastmoney.com/PC_HKF10/CompanyProfile/index?color=w&code=00700
+        http://emweb.eastmoney.com/CompanySurvey/Index?color=w&code=SH601318
+        market = stock_market[self.market_id]
+        if market == 'SZ' or market == 'SH':
+            if self.type_id in ('1', '2', '25'):
+                return f"http://emweb.eastmoney.com/CompanySurvey/Index?color=w&code={market+self.code}"
+        elif market in ('US', 'HK'):
+            #TODO refine stock_type in US/HK market
+            return f"http://emweb.eastmoney.com/PC_{market}F10/CompanyInfo/index?color=w&code={self.code}"
+        else:
+            return ''
+            
     def collect_data_daily(self, time_begin='19900101', time_end='20991231'):
         stock_url = eastmoney_base.format(market=self.market_id, 
                                           bench_code=self.code, 
