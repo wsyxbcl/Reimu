@@ -15,7 +15,7 @@ from utils import *
 from commands import argparse_kline, argparse_define, argparse_status, argparse_now, argparse_compare
 
 
-_market_emoji =  {"SZ": '🇨🇳', "SH": '🇨🇳', "US": '🇺🇸', "HK": '🇭🇰'}
+_market_emoji =  {"SZ": '🇨🇳', "SH": '🇨🇳', "US": '🇺🇸', "NASDAQ": '🇺🇸', "NYSE": '🇺🇸', "AMEX": '🇺🇸', "HK": '🇭🇰'}
 # file id for the picture, i.e. placeholder of inline keyboard
 _file_id_inline = "AgACAgUAAxkBAAIDymATQjsOZbFGxGqQMKt-Q_MUyUXdAAL1qjEbgr-YVC1IVvhlQFtLfoeybnQAAwEAAwIAA20AA47jAQABHgQ" 
 

@@ -32,7 +32,7 @@ _test_stock_HK = ["腾讯控股", "美团", "小米集团", "舜宇光学科技"
 # For filtering eastmoney searchapi
 # "TypeUS" seems to be a strong factor, but with uncertain meaning 
 # MktNum: MarketName
-stock_market =  {'0': "SZ", '1': "SH", '105': "US", '106': "US", '107': "US", '156': "US", '100': "US", '116': "HK"}
+stock_market =  {'0': "SZ", '1': "SH", '105': "NASDAQ", '106': "NYSE", '107': "AMEX", '156': "US", '100': "US", '116': "HK"}
 
 # SecurityType: SecurityTypeName
 #TODO refine stock_type in US/HK market
@@ -83,13 +83,13 @@ class Stock:
         """
         retrieve company_info from eastmoney (currently only the url is returned)
         """
-        market = stock_market[self.market_id]
-        if market == 'SZ' or market == 'SH':
-            if self.type_id in ('1', '2', '25'):
-                return f"http://emweb.eastmoney.com/CompanySurvey/Index?color=w&code={market+self.code}"
-        elif market in ('US', 'HK'):
+        if (market := stock_market[self.market_id]) in ('SZ', 'SH'):
+            h5_fc = self.code+{'SH': '01', 'SZ': '02'}[market]
+            return f"https://emh5.eastmoney.com/html/?fc={h5_fc}&color=w"
+        elif market in ('AMEX', 'NYSE', 'NASDAQ', 'HK'):
             #TODO refine stock_type in US/HK market
-            return f"http://emweb.eastmoney.com/PC_{market}F10/CompanyInfo/index?color=w&code={self.code}"
+            h5_fc = self.code+{'HK': '', 'AMEX': '.A', 'NYSE': '.N', 'NASDAQ': '.O'}[market]
+            return f"https://emh5.eastmoney.com/{market}/index.html?fc={h5_fc}&color=w"
         else:
             return ''
             
