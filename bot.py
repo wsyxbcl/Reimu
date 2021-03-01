@@ -75,6 +75,7 @@ async def kline(message, query=None):
         stock = stock_list[0]
         buf = io.BytesIO()
         if type(stock) == Stock_mix:
+            stock_info = ''
             time_mix_created = stock.create_time.strftime("%Y%m%d")
             if args.days is None:
                 time_begin = time_mix_created
