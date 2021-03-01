@@ -208,8 +208,6 @@ async def now(message, query=None):
     if len(stock_list) == 1:
         buf = io.BytesIO()
         stock = stock_list[0]
-        if stock_info := stock.company_info:
-            stock_info = f"[INFO]({stock_info})"
         if type(stock_mix := stock_list[0]) is Stock_mix:
             try:
                 time_begin, _ = get_time_range(int(message.text.split()[2]))
@@ -226,6 +224,8 @@ async def now(message, query=None):
             await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+\
                                                 "\nLatest return rate: {:.2%}".format(profit_ratio[-1]))
         else:
+            if stock_info := stock.company_info:
+                stock_info = f"[INFO]({stock_info})"
             plot_kline(stock_data=stock.collect_data_live(), 
                        title=f'Live price of {stock.code} (UTC+8)', plot_type='line', volume=True, macd=False, output=buf)
             buf.seek(0)
