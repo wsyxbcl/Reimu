@@ -554,9 +554,10 @@ async def plot_return_rate_anlys_async(collection, date_begin, ref=None, excess_
     collection_rr = []
     async with aiohttp.ClientSession() as client: 
         # stock_data: list of pd.df
-        stock_data = await asyncio.gather(*[data_collector_async(stock, client, time_begin=time_begin) for stock in collection])
-    for stock_kline in stock_data:
-        stock_kline = sstock_kline.set_index('date')
+        stock_data = await asyncio.gather(*[data_collector_async(stock, client, time_begin=date_begin) for stock in collection])
+    for i, stock_kline in enumerate(stock_data):
+        stock = collection[i]
+        stock_kline = stock_kline.set_index('date')
         stock_kline.index = pd.to_datetime(stock_kline.index)
         stock_kline = stock_kline.astype(float)
         stock_kline[stock.name] = (stock_kline['close'] - stock_kline['close'][ref_idx]) / stock_kline['close'][ref_idx]
