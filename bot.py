@@ -269,7 +269,7 @@ async def compare(message):
     time_begin, _ = get_time_range(int(args.days))
     stock_list = [stock_query(keyword)[0] for keyword in args.stocks]
     buf = io.BytesIO()
-    plot_return_rate_anlys(stock_list, date_begin=time_begin, output=buf)
+    await plot_return_rate_anlys_async(stock_list, date_begin=time_begin, output=buf)
     buf.seek(0)
     await message.reply_photo(buf, caption='return rates from '+time_begin)
     

@@ -545,6 +545,44 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
     mix_data['low'] = mix_data['open'] = mix_data['high'] = place_holder
     return mix_data, matrix_close_price # to be used in profit analysis
 
+async def plot_return_rate_anlys_async(collection, date_begin, ref=None, excess_return=False, output=os.path.join(_test_path, 'compare.jpg')):
+    """
+    Perform return rate anaylsis on collection of stock or stock_mix, by plotting return rates in same axis. 
+    """
+    if ref is None:
+        ref_idx = 0
+    collection_rr = []
+    async with aiohttp.ClientSession() as client: 
+        # stock_data: list of pd.df
+        stock_data = await asyncio.gather(*[data_collector_async(stock, client, time_begin=time_begin) for stock in collection])
+    for stock_kline in stock_data:
+        stock_kline = sstock_kline.set_index('date')
+        stock_kline.index = pd.to_datetime(stock_kline.index)
+        stock_kline = stock_kline.astype(float)
+        stock_kline[stock.name] = (stock_kline['close'] - stock_kline['close'][ref_idx]) / stock_kline['close'][ref_idx]
+        collection_rr.append(stock_kline[stock.name])
+    collection_rr_df = reduce(lambda x, y: pd.merge(x, y, how='outer', on='date', sort=True), collection_rr)
+
+    # create a 'base layer' placeholder for plot
+    place_holder = np.empty(collection_rr_df.shape[0])
+    place_holder[:] = np.nan
+    collection_rr_df['close'] = collection_rr_df['low'] = collection_rr_df['open'] = collection_rr_df['high'] = place_holder
+
+    apdict = [mpf.make_addplot(collection_rr_df[stock.name]) for stock in collection]
+    kwargs = dict(type='candle', figratio=(11, 8), figscale=0.85)
+    style = mpf.make_mpf_style(base_mpf_style='yahoo', rc={'font.size':8, 'font.family': 'Source Han Sans'}, marketcolors=mc)
+    fig, axes = mpf.plot(collection_rr_df, **kwargs, 
+                         style=style, 
+                         scale_padding={'left': 0.4, 'top': 1, 'right': 1, 'bottom': 1}, 
+                         returnfig=True, 
+                         ylabel='Return rate', 
+                         addplot=apdict)
+    axes[0].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1.0))
+    legend = axes[0].legend([stock.name for stock in collection], prop={'size': 7}, fancybox=True, borderaxespad=0.)
+    legend.get_frame().set_alpha(0.4)
+    fig.savefig(output, dpi=300)
+    plt.close(fig)
+
 # generate Stock_mix
 def gen_stock_mix(mix_code, mix_name, stock_names, holding_ratios, create_time):
     stock_list = []
