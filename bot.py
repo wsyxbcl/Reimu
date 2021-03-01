@@ -208,6 +208,8 @@ async def now(message, query=None):
     if len(stock_list) == 1:
         buf = io.BytesIO()
         stock = stock_list[0]
+        if stock_info := stock.company_info:
+            stock_info = f"[INFO]({stock_info})"
         if type(stock_mix := stock_list[0]) is Stock_mix:
             try:
                 time_begin, _ = get_time_range(int(message.text.split()[2]))
@@ -229,9 +231,9 @@ async def now(message, query=None):
             buf.seek(0)
             if args.md5:
                 # Not open to user input, can only result from inline keyboard callback
-                await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=stock.code+' '+stock.name))
+                await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=' '.join([stock.code, stock.name, stock_info]), parse_mode=ParseMode.MARKDOWN))
             else:
-                await message.reply_photo(buf, caption=stock.code+' '+stock.name)
+                await message.reply_photo(buf, caption=' '.join([stock.code, stock.name, stock_info]), parse_mode=ParseMode.MARKDOWN)
     else:
         # get user's selection from inline keyboard
         keyboard_markup = types.InlineKeyboardMarkup()
