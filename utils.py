@@ -514,20 +514,43 @@ async def plot_return_rate_anlys_async(collection, date_begin, ref=None, excess_
     """
     Perform return rate anaylsis on collection of stock or stock_mix, by plotting return rates in same axis. 
     """
-    if ref is None:
-        ref_idx = 0
-    collection_rr = []
-    async with aiohttp.ClientSession() as client: 
-        # stock_data: list of pd.df
-        stock_data = await asyncio.gather(*[data_collector_async(stock, client, time_begin=date_begin) for stock in collection])
-    for i, stock_kline in enumerate(stock_data):
-        stock = collection[i]
-        stock_kline = stock_kline.set_index('date')
-        stock_kline.index = pd.to_datetime(stock_kline.index)
-        stock_kline = stock_kline.astype(float)
-        stock_kline[stock.name] = (stock_kline['close'] - stock_kline['close'][ref_idx]) / stock_kline['close'][ref_idx]
-        collection_rr.append(stock_kline[stock.name])
-    collection_rr_df = reduce(lambda x, y: pd.merge(x, y, how='outer', on='date', sort=True), collection_rr)
+    if len(collection_type := (set(map(type, collection)))) != 1:
+        # collection containing both stock and stock_mix is not supported 
+        return 1
+    else:
+        collection_type = list(collection_type)[0]
+        collection_rr = []
+    if collection_type is Stock:
+        if ref is None:
+            ref_idx = 0
+        async with aiohttp.ClientSession() as client: 
+            # stock_data: list of pd.df
+            collection_data = await asyncio.gather(*[data_collector_async(stock, client, time_begin=date_begin) for stock in collection])
+        for i, stock_kline in enumerate(collection_data):
+            stock = collection[i]
+            stock_kline = stock_kline.set_index('date')
+            stock_kline.index = pd.to_datetime(stock_kline.index)
+            stock_kline = stock_kline.astype(float)
+            stock_kline[stock.name] = (stock_kline['close'] - stock_kline['close'][ref_idx]) / stock_kline['close'][ref_idx]
+            collection_rr.append(stock_kline[stock.name])
+    elif collection_type is Stock_mix:
+        #TODO time_begin here should contain buffer time, refer to /kline or /status
+        collection_data, collection_close_price = await asyncio.gather(*[mix_data_collector_async(stock_mix, time_begin=time_begin) for stock_mix in collection])
+        #TODO date_ref behavior for /compare, if date_begin is earlier than date_created, use 0 (price = 1) or the true return rate (true price)
+        #TODO refer to plot_profitline
+        for i, stock_data in enumerate(collection_data):
+            stock_mix = collection[i]
+            # price reference is handled in Stock_mix.get_profit
+            profit_ratio, _ = stock_mix.get_profit_ratio(stock_data, collection_close_price[i], 
+                                                         date_ref=stock_mix.create_time)
+            stock_data['close'] = profit_ratio
+            stock_profitline = stock_data.set_index("date")
+            stock_profitline.index = pd.to_datetime(stock_profitline.index)
+            stock_profitline = stock_profitline.astype(float)
+            collection_rr.append(stock_profitline[stock_mix.code])
+                                                                            
+    collection_rr_df = reduce(lambda x, y: pd.merge(x, y, how='outer', on='date', sort=True), collection_rr) # merge into a single dataframe
+    collection_close_price_df = collection_close_price_df.fillna(method='ffill').fillna(0.0) # second fillna is to deal with return rate before created
 
     # create a 'base layer' placeholder for plot
     place_holder = np.empty(collection_rr_df.shape[0])
