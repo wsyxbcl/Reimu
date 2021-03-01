@@ -73,8 +73,6 @@ async def kline(message, query=None):
 
     if len(stock_list) == 1:
         stock = stock_list[0]
-        if stock_info := stock.company_info:
-            stock_info = f"[INFO]({stock_info})"
         buf = io.BytesIO()
         if type(stock) == Stock_mix:
             time_mix_created = stock.create_time.strftime("%Y%m%d")
@@ -88,7 +86,9 @@ async def kline(message, query=None):
                                                                time_ref='created')
             plot_kline(stock_data=stock_data, title=f'kline of {stock.code}',
                        plot_type='line', volume=False, macd=macd, output=buf)
-        else:        
+        else:
+            if stock_info := stock.company_info:
+                stock_info = f"[INFO]({stock_info})"
             plot_kline(stock_data=stock.collect_data_daily(time_begin, time_end), 
                        title=f'kline of {stock.code}', macd=macd, output=buf)
         buf.seek(0)
