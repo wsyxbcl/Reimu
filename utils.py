@@ -427,8 +427,7 @@ async def plot_return_rate_anlys_async(collection, date_begin, ref=None, excess_
             stock_kline[stock.name] = (stock_kline['close'] - stock_kline['close'][ref_idx]) / stock_kline['close'][ref_idx]
             collection_rr.append(stock_kline[stock.name])
     elif collection_type is Stock_mix:
-        #TODO time_begin here should contain buffer time, refer to /kline or /status
-        collection_data, collection_close_price = await asyncio.gather(*[mix_data_collector_async(stock_mix, time_begin=date_begin) for stock_mix in collection])
+        collection_data, collection_close_price = await asyncio.gather(*[mix_data_collector_async(stock_mix, time_begin=stock_mix.create_time.strftime("%Y%m%d")) for stock_mix in collection])
         #TODO date_ref behavior for /compare, if date_begin is earlier than date_created, use 0 (price = 1) or the true return rate (true price)
         #TODO refer to plot_profitline
         for i, stock_data in enumerate(collection_data):
