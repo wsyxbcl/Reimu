@@ -252,8 +252,6 @@ async def data_collector_async(stock, client, time_begin='19900101', time_end='2
         response = await client.request(method='GET', url=stock_url)
         response_json = await response.json()
         stock_data = pd.DataFrame(map(lambda x: x.split(','), response_json["data"]["klines"]))
-    except HTTPError as e:
-        raise QueryError(f"HTTP error: {e}") from e
     except TypeError as e:
         raise QueryError("Can't find kline data") from e
     stock_data.columns = ["date", "open", "close", "high", "low", "volume", "money", "change"]
@@ -430,7 +428,7 @@ async def plot_return_rate_anlys_async(collection, date_begin, ref=None, excess_
             collection_rr.append(stock_kline[stock.name])
     elif collection_type is Stock_mix:
         #TODO time_begin here should contain buffer time, refer to /kline or /status
-        collection_data, collection_close_price = await asyncio.gather(*[mix_data_collector_async(stock_mix, time_begin=time_begin) for stock_mix in collection])
+        collection_data, collection_close_price = await asyncio.gather(*[mix_data_collector_async(stock_mix, time_begin=date_begin) for stock_mix in collection])
         #TODO date_ref behavior for /compare, if date_begin is earlier than date_created, use 0 (price = 1) or the true return rate (true price)
         #TODO refer to plot_profitline
         for i, stock_data in enumerate(collection_data):
