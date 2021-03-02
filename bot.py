@@ -30,13 +30,6 @@ logging.basicConfig(filename="./hakurei_bot.log",
 bot = Bot(token=config["telegram"]["token"])
 dp = Dispatcher(bot)
 
-def get_time_range(day_interval=120):
-    """
-    return ({day_interval} days ago, today + 1)
-    """
-    time_end = datetime.datetime.utcnow() + datetime.timedelta(days=1)
-    time_begin = time_end - datetime.timedelta(days=day_interval)
-    return (time_begin.strftime("%Y%m%d"), time_end.strftime("%Y%m%d"))
 
 @dp.message_handler(commands=['start'])
 async def send_welcome(message):
