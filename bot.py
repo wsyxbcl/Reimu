@@ -86,11 +86,12 @@ async def kline(message, query=None):
             plot_kline(stock_data=stock.collect_data_daily(time_begin, time_end), 
                        title=f'kline of {stock.code}', macd=macd, output=buf)
         buf.seek(0)
+        kline_caption = (' '.join([stock.code, stock.name, stock_info])).replace('*', '\*') # A-share sucks!
         if args.md5:
             # Not open to user input, can only result from inline keyboard callback
-            await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=' '.join([stock.code, stock.name, stock_info]), parse_mode=ParseMode.MARKDOWN))
+            await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=kline_caption, parse_mode=ParseMode.MARKDOWN))
         else:
-            await message.reply_photo(buf, caption=' '.join([stock.code, stock.name, stock_info]), parse_mode=ParseMode.MARKDOWN)
+            await message.reply_photo(buf, caption=kline_caption, parse_mode=ParseMode.MARKDOWN)
     else:
         # get user's selection from inline keyboard
         keyboard_markup = types.InlineKeyboardMarkup()
@@ -134,7 +135,7 @@ async def define(message):
     logging.info(f'creating stock mix:{stock_mix}')
     if type(stock_mix) is dict:
         candidate_list = stock_mix
-        await message.reply("Try using code to specify following stocks:\n"+str(candidate_list), parse_mode=ParseMode.MARKDOWN)
+        await message.reply("Try using code to specify following stocks:\n"+str(candidate_list).replace('*', '\*'), parse_mode=ParseMode.MARKDOWN)
         return 2
     buf = io.BytesIO()
     stock_mix.draw(output=buf)
@@ -223,11 +224,12 @@ async def now(message, query=None):
             plot_kline(stock_data=stock.collect_data_live(), 
                        title=f'Live price of {stock.code} (UTC+8)', plot_type='line', volume=True, macd=False, output=buf)
             buf.seek(0)
+            now_caption = (' '.join([stock.code, stock.name, stock_info])).replace('*', '\*') # A-share sucks!
             if args.md5:
                 # Not open to user input, can only result from inline keyboard callback
-                await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=' '.join([stock.code, stock.name, stock_info]), parse_mode=ParseMode.MARKDOWN))
+                await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=now_caption, parse_mode=ParseMode.MARKDOWN))
             else:
-                await message.reply_photo(buf, caption=' '.join([stock.code, stock.name, stock_info]), parse_mode=ParseMode.MARKDOWN)
+                await message.reply_photo(buf, caption=now_caption, parse_mode=ParseMode.MARKDOWN)
     else:
         # get user's selection from inline keyboard
         keyboard_markup = types.InlineKeyboardMarkup()
