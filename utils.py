@@ -427,29 +427,35 @@ async def plot_return_rate_anlys_async(collection, date_begin, ref=None, excess_
             stock_kline[stock.name] = (stock_kline['close'] - stock_kline['close'][ref_idx]) / stock_kline['close'][ref_idx]
             collection_rr.append(stock_kline[stock.name])
     elif collection_type is Stock_mix:
-        collection_data, collection_close_price = await asyncio.gather(*[mix_data_collector_async(stock_mix, time_begin=stock_mix.create_time.strftime("%Y%m%d")) for stock_mix in collection])
+        # collection_data: (mix_data, mix_close_price)
+        collection_data = await asyncio.gather(*[mix_data_collector_async(stock_mix, time_begin=(stock_mix.create_time - datetime.timedelta(days=9)).strftime("%Y%m%d")) for stock_mix in collection])
         #TODO date_ref behavior for /compare, if date_begin is earlier than date_created, use 0 (price = 1) or the true return rate (true price)
         #TODO refer to plot_profitline
-        for i, stock_data in enumerate(collection_data):
+        for i, collection_data in enumerate(collection_data):
             stock_mix = collection[i]
             # price reference is handled in Stock_mix.get_profit
-            profit_ratio, _ = stock_mix.get_profit_ratio(stock_data, collection_close_price[i], 
+            stock_data = collection_data[0]
+            stock_close_price = collection_data[1]
+            profit_ratio, _ = stock_mix.get_profit_ratio(stock_data, stock_close_price, 
                                                          date_ref=stock_mix.create_time)
-            stock_data['close'] = profit_ratio
             stock_profitline = stock_data.set_index("date")
             stock_profitline.index = pd.to_datetime(stock_profitline.index)
             stock_profitline = stock_profitline.astype(float)
+            stock_profitline[stock_mix.code] = profit_ratio
             collection_rr.append(stock_profitline[stock_mix.code])
                                                                             
     collection_rr_df = reduce(lambda x, y: pd.merge(x, y, how='outer', on='date', sort=True), collection_rr) # merge into a single dataframe
-    collection_close_price_df = collection_close_price_df.fillna(method='ffill').fillna(0.0) # second fillna is to deal with return rate before created
+    collection_rr_df = collection_rr_df.fillna(method='ffill').fillna(0.0) # second fillna is to deal with return rate before created
 
     # create a 'base layer' placeholder for plot
     place_holder = np.empty(collection_rr_df.shape[0])
     place_holder[:] = np.nan
     collection_rr_df['close'] = collection_rr_df['low'] = collection_rr_df['open'] = collection_rr_df['high'] = place_holder
 
-    apdict = [mpf.make_addplot(collection_rr_df[stock.name]) for stock in collection]
+    if collection_type is Stock:
+        apdict = [mpf.make_addplot(collection_rr_df[stock.name]) for stock in collection]
+    elif collection_type is Stock_mix:
+        apdict = [mpf.make_addplot(collection_rr_df[stock.code]) for stock in collection]
     kwargs = dict(type='candle', figratio=(11, 8), figscale=0.85)
     style = mpf.make_mpf_style(base_mpf_style='yahoo', rc={'font.size':8, 'font.family': 'Source Han Sans'}, marketcolors=mc)
     fig, axes = mpf.plot(collection_rr_df, **kwargs, 
