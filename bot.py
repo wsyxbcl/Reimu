@@ -264,7 +264,7 @@ async def compare(message):
     buf = io.BytesIO()
     await plot_return_rate_anlys_async(stock_list, date_begin=time_begin, output=buf)
     buf.seek(0)
-    await message.reply_photo(buf, caption='return rates from '+time_begin)
+    await message.reply_photo(buf, caption='')
     
 # To get photo file_id
 # @dp.message_handler(content_types=['photo'])
