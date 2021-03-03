@@ -175,6 +175,8 @@ class Stock_mix:
             print("No ref data in mix_data")
             raise
         profit_ratio = (mix_data['close'].values - mix_price_ref) / mix_price_ref
+        #TODO for created time, temporary fix
+        profit_ratio[:mix_price_ref_idx] = 0.0
 
         matrix_price_ref = matrix_close_price[:, mix_price_ref_idx]
         matrix_price_today = matrix_close_price[:, mix_price_today_idx]
