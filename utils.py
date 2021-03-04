@@ -1,7 +1,7 @@
 import aiohttp
 import asyncio
 import datetime
-from functools import wraps, reduce
+from functools import reduce
 import hashlib
 import os
 import pickle
@@ -15,26 +15,19 @@ import numpy as np
 import pandas as pd
 import requests
 
-matplotlib.rcParams['font.family'] = ['Source Han Sans']
+from style import mc
 
+# VARIABLES
+matplotlib.rcParams['font.family'] = ['Source Han Sans']
 data_path = './data'
 _test_path = './demo'
-# fqt is for split-adjusted price
-# eastmoney_base = "http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={market}.{bench_code}&fields1=f1%2Cf2%2Cf3%2Cf4%2Cf5&fields2=f51%2Cf52%2Cf53%2Cf54%2Cf55%2Cf56%2Cf57%2Cf58&klt=101&fqt=0&beg={time_begin}&end={time_end}"
+# fqt=1: split-adjusted price
 eastmoney_base = "http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={market}.{bench_code}&fields1=f1%2Cf2%2Cf3%2Cf4%2Cf5&fields2=f51%2Cf52%2Cf53%2Cf54%2Cf55%2Cf56%2Cf57%2Cf58&klt=101&fqt=1&beg={time_begin}&end={time_end}"
 eastmoney_base_live = "http://push2.eastmoney.com/api/qt/stock/trends2/get?fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57,f58&ut=fa5fd1943c7b386f172d6893dbfba10b&iscr=0&ndays=1&secid={market}.{bench_code}"
 
-# "沪市（主板、科创板、基金）、深市（主板、中小板、创业板、基金）", guided by Maple
-# http://www.szse.cn/
-# http://www.sse.com.cn/
-_test_stock_code_CN = ['600000', '688111', '510010', '000001', '002001', '300001', '159001']
-_test_stock_HK = ["腾讯控股", "美团", "小米集团", "舜宇光学科技", "华虹半导体", "思摩尔国际", "海底捞"]
-# For filtering eastmoney searchapi
-# "TypeUS" seems to be a strong factor, but with uncertain meaning 
-# MktNum: MarketName
-stock_market =  {'0': "SZ", '1': "SH", '105': "NASDAQ", '106': "NYSE", '107': "AMEX", '156': "US", '100': "US", '116': "HK"}
-
-# SecurityType: SecurityTypeName
+# FILTERS
+# "TypeUS" seems to be a strong parameter, but with uncertainty 
+stock_market =  {'0': "SZ", '1': "SH", '105': "NASDAQ", '106': "NYSE", '107': "AMEX", '156': "US", '100': "US", '116': "HK"} # MktNum: MarketName
 #TODO refine stock_type in US/HK market
 stock_type = {'1': "沪A", 
               '25': "科创板", 
@@ -42,17 +35,8 @@ stock_type = {'1': "沪A",
               '8': "基金", 
               '5': "指数", 
               '19': "港股", 
-              '6': "港股"}
+              '6': "港股"} # SecurityType: SecurityTypeName
 
-# kline color style
-mc = {'candle': {'up': '#fe3032', 'down': '#00b060'},
-      'edge': {'up': '#fe3032', 'down': '#00b060'},
-      'wick': {'up': '#fe3032', 'down': '#00b060'},
-      'ohlc': {'up': '#fe3032', 'down': '#00b060'},
-      'volume': {'up': '#fd6b6c', 'down': '#4dc790'},
-      'vcedge': {'up': '#1f77b4', 'down': '#1f77b4'},
-      'vcdopcod': False,
-      'alpha': 0.7}
 
 class QueryError(Exception):
     def __init__(self, message):
@@ -158,15 +142,10 @@ class Stock_mix:
             pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
         
     def get_profit_ratio(self, mix_data, matrix_close_price, date_ref=None):
-        # mix_data can be calculated from matrix_close_price, 
-        # just for saving time here
-
-        # Match datetime with utc, NOTICE that timezone are assumed to be same
-        # in one mixed stock 
+        """
+        # mix_data is actrually reduntand, included here just for convinence. 
         # date_ref == 'latest': return profit_ratio based on the latest two days (dirty fix for /now
-
-        # Timezone convert
-        #TODO a utc convert method for Stock_mix
+        """
         if date_ref == 'latest':
             date_ref_latest = True
         else:
@@ -196,6 +175,8 @@ class Stock_mix:
             print("No ref data in mix_data")
             raise
         profit_ratio = (mix_data['close'].values - mix_price_ref) / mix_price_ref
+        #TODO for created time, temporary fix
+        profit_ratio[:mix_price_ref_idx] = 0.0
 
         matrix_price_ref = matrix_close_price[:, mix_price_ref_idx]
         matrix_price_today = matrix_close_price[:, mix_price_today_idx]
@@ -212,47 +193,7 @@ class Stock_mix:
                "\n".join("{!s}\t{:.1%}".format(stock, ratio)\
                for stock, ratio in zip(self.stock_list, holding_ratio_norm))
 
-# Test utilities
-def _query_test(stock_list):
-    """
-    Leave test 
-    """
-    for stock in stock_list:
-        try:
-            stock_query(stock, echo=True)
-        except QueryError:
-            print(f"QueryError on {stock}")
-
-def timing(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        print('{}.time'.format(func.__name__))
-        start = time.perf_counter()
-        func_return = func(*args, **kwargs)
-        end = time.perf_counter()
-        print("runtime: {}".format(end - start))
-        return func_return
-    return wrapper
-
-def timing_async(func):
-    async def helper(func, *args, **params):
-        if asyncio.iscoroutinefunction(func):
-            print("coroutine function")
-            return await func(*args, **params)
-        else:
-            print("not a coroutine function")
-            return func(*args, **params)
-
-    @wraps(func)
-    async def wrapper(*args, **params):
-        print('{}.time'.format(func.__name__))
-        start = time.time()
-        func_return = await helper(func, *args, **params)
-        print("runtime: {}".format(time.time() - start))
-        return func_return
-    return wrapper
-
-# Data collecting utilities
+# DATA COLLECTION
 def stock_query(keyword, filter_md5=None, filter_code=None, echo=False):
     """
     borrowed from https://github.com/pengnanxiaomeimei/stock_data_analysis/
@@ -304,49 +245,80 @@ def stock_query(keyword, filter_md5=None, filter_code=None, echo=False):
         raise QueryError(f"Empty stock_list from \n{query_result}")
     return stock_list
 
-# @timing
-def mix_data_collector(stock_mix, time_begin='20210101', time_end='20991231', time_ref=None):
+async def data_collector_async(stock, client, time_begin='19900101', time_end='20991231'):
+    stock_url = eastmoney_base.format(market=stock.market_id, 
+                                      bench_code=stock.code, 
+                                      time_begin=time_begin, 
+                                      time_end=time_end)
+    try:
+        response = await client.request(method='GET', url=stock_url)
+        response_json = await response.json()
+        stock_data = pd.DataFrame(map(lambda x: x.split(','), response_json["data"]["klines"]))
+    except TypeError as e:
+        raise QueryError("Can't find kline data") from e
+    stock_data.columns = ["date", "open", "close", "high", "low", "volume", "money", "change"]
+    stock_data["date"] = pd.to_datetime(stock_data["date"])
+    return stock_data
+
+async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='20991231', time_ref='latest'):
     """
     Collecting and postprocessing for Stock_mix, where only close price are collected
     Noted that long time range can cause date inconsistency
     """
-    if time_ref is None:
-        time_ref = time_begin
-    stock_data = [stock.collect_data_daily(time_begin=time_begin, time_end=time_end) for stock in stock_mix.stock_list]
-    try:
-        matrix_date = np.array([stock['date'].values for stock in stock_data], dtype=object)
-        #TODO #17
-            # for i, date in enumerate(matrix_date):
-            #     if i == 0:
-            #         date_ref = date
-            #     else:
-            #         date_ref = matrix_date[i-1]
-            #     print(str(i)+' '+str(len(date)))
-            #     if len(date_ref) != (date):
-            #         print(set(date_ref) - set(date))
-    except ValueError:
-        # operands could not be broadcast together
-        raise
-    if not np.equal(matrix_date[0], matrix_date).all():
-        print("date inconsistent")
+    # using the same client instead of creating everytime may improve the performance
+    async with aiohttp.ClientSession() as client: 
+        # stock_data: list of pd.df
+        stock_data = await asyncio.gather(*[data_collector_async(stock, client, time_begin=time_begin, time_end=time_end) for stock in stock_mix.stock_list])
+    # Assuming that dates are inconsistent, trading suspention handled
 
-    matrix_close_price = np.array([np.array(stock['close']) for stock in stock_data]).astype(float)
-    # matrix_volume = np.array([np.array(stock['volume']) for stock in stock_data]).astype(float)
+    # a more robust solution
+    collection_close_price = []
+    for i, stock in enumerate(stock_data):
+        stock_kline = stock.set_index('date')
+        stock_kline.index = pd.to_datetime(stock_kline.index)
+        stock_kline = stock_kline.astype(float)
+        stock_kline[[stock.code for stock in stock_mix.stock_list][i]] = stock_kline['close']
+        collection_close_price.append(stock_kline[[stock.code for stock in stock_mix.stock_list][i]])
+    # dealing with trade suspention
+    collection_close_price_df = reduce(lambda x, y: pd.merge(x, y, how='outer', on='date', sort=True), collection_close_price)
+    # print(collection_close_price_df)
+    collection_close_price_df = collection_close_price_df.fillna(method='ffill')
+    # print(collection_close_price_df)
+    dates_array = collection_close_price_df.index.values
+    matrix_close_price = np.transpose(collection_close_price_df.to_numpy())
+
     # only need close price here
-    close_price_ref = matrix_close_price[:, 0]
+    if time_ref == 'oldest':
+        date_ref_index = 0
+    elif time_ref == 'latest':
+        date_ref_index = -1
+    elif time_ref == 'created':
+        date_created_stamp = pd.to_datetime(stock_mix.create_time.date())
+        for i in range(10):
+            # range(10) is to match the buffer time for non-trading days
+            # for Stock_mix created on non-trading days
+            # we slide the dates_array by step of 1 day to find the nearest previous trading day
+            try:
+                date_ref_index = np.where((dates_array - np.timedelta64(i, 'D')) == date_created_stamp)[0][0]
+                break
+            except IndexError:
+                pass
+    else:
+        raise ValueError
+    close_price_ref = matrix_close_price[:, date_ref_index]
     stock_share_ratios = stock_mix.holding_ratio / close_price_ref
     value_mix = np.average(matrix_close_price, axis=0, weights=stock_share_ratios) 
-    value_mix = value_mix / value_mix[0] # norm to 1
-    mix_data = stock_data[0].copy()
-    mix_data = mix_data.drop(['money', 'change', 'volume'], axis=1)
+    value_mix = value_mix / value_mix[date_ref_index] # norm to 1
+    mix_data = pd.DataFrame(dates_array, columns=['date'])
     mix_data['close'] = value_mix
     # mix_data['volume'] = volume_mix
     # Data redundancy, rather inelegant here, might go PR on mplfinance (or simplily using plot instead)
-    mix_data['low'] = mix_data['open'] = mix_data['high'] = np.zeros(len(stock_data[0]['date']))
+    place_holder = np.empty(len(mix_data))
+    place_holder[:] = np.nan
+    mix_data['low'] = mix_data['open'] = mix_data['high'] = place_holder
     return mix_data, matrix_close_price # to be used in profit analysis
 
-
-# Plot utilities
+# PLOT
 def plot_kline(stock_data, title='', plot_type='candle', volume=True, macd=False, output=os.path.join(_test_path, 'kline.jpg')):
     # issue#316 of mplfinance might be helpful
     stock_kline = stock_data.set_index("date")
@@ -433,27 +405,59 @@ def plot_stock_profit(stock_mix, stock_profit_ratio, title='', output=os.path.jo
     plt.savefig(output, dpi=300)
     plt.close()
 
-def plot_return_rate_anlys(collection, date_begin, ref=None, excess_return=False, output=os.path.join(_test_path, 'compare.jpg')):
+async def plot_return_rate_anlys_async(collection, date_begin, ref=None, excess_return=False, output=os.path.join(_test_path, 'compare.jpg')):
     """
     Perform return rate anaylsis on collection of stock or stock_mix, by plotting return rates in same axis. 
     """
-    if ref is None:
-        ref_idx = 0
-    collection_rr = []
-    for stock in collection:
-        stock_kline = stock.collect_data_daily(time_begin=date_begin).set_index('date')
-        stock_kline.index = pd.to_datetime(stock_kline.index)
-        stock_kline = stock_kline.astype(float)
-        stock_kline[stock.name] = (stock_kline['close'] - stock_kline['close'][ref_idx]) / stock_kline['close'][ref_idx]
-        collection_rr.append(stock_kline[stock.name])
-    collection_rr_df = reduce(lambda x, y: pd.merge(x, y, how='outer', on='date', sort=True), collection_rr)
+    if len(collection_type := (set(map(type, collection)))) != 1:
+        # collection containing both stock and stock_mix is not supported 
+        return 1
+    else:
+        collection_type = list(collection_type)[0]
+        collection_rr = []
+    if collection_type is Stock:
+        if ref is None:
+            ref_idx = 0
+        async with aiohttp.ClientSession() as client: 
+            # stock_data: list of pd.df
+            collection_data = await asyncio.gather(*[data_collector_async(stock, client, time_begin=date_begin) for stock in collection])
+        for i, stock_kline in enumerate(collection_data):
+            stock = collection[i]
+            stock_kline = stock_kline.set_index('date')
+            stock_kline.index = pd.to_datetime(stock_kline.index)
+            stock_kline = stock_kline.astype(float)
+            stock_kline[stock.name] = (stock_kline['close'] - stock_kline['close'][ref_idx]) / stock_kline['close'][ref_idx]
+            collection_rr.append(stock_kline[stock.name])
+    elif collection_type is Stock_mix:
+        # collection_data: (mix_data, mix_close_price)
+        collection_data = await asyncio.gather(*[mix_data_collector_async(stock_mix, time_begin=(stock_mix.create_time - datetime.timedelta(days=9)).strftime("%Y%m%d")) for stock_mix in collection])
+        #TODO date_ref behavior for /compare, if date_begin is earlier than date_created, use 0 (price = 1) or the true return rate (true price)
+        #TODO refer to plot_profitline
+        for i, collection_data in enumerate(collection_data):
+            stock_mix = collection[i]
+            # price reference is handled in Stock_mix.get_profit
+            stock_data = collection_data[0]
+            stock_close_price = collection_data[1]
+            profit_ratio, _ = stock_mix.get_profit_ratio(stock_data, stock_close_price, 
+                                                         date_ref=stock_mix.create_time)
+            stock_profitline = stock_data.set_index("date")
+            stock_profitline.index = pd.to_datetime(stock_profitline.index)
+            stock_profitline = stock_profitline.astype(float)
+            stock_profitline[stock_mix.code] = profit_ratio
+            collection_rr.append(stock_profitline[stock_mix.code])
+                                                                            
+    collection_rr_df = reduce(lambda x, y: pd.merge(x, y, how='outer', on='date', sort=True), collection_rr) # merge into a single dataframe
+    collection_rr_df = collection_rr_df.fillna(method='ffill').fillna(0.0) # second fillna is to deal with return rate before created
 
     # create a 'base layer' placeholder for plot
     place_holder = np.empty(collection_rr_df.shape[0])
     place_holder[:] = np.nan
     collection_rr_df['close'] = collection_rr_df['low'] = collection_rr_df['open'] = collection_rr_df['high'] = place_holder
 
-    apdict = [mpf.make_addplot(collection_rr_df[stock.name]) for stock in collection]
+    if collection_type is Stock:
+        apdict = [mpf.make_addplot(collection_rr_df[stock.name]) for stock in collection]
+    elif collection_type is Stock_mix:
+        apdict = [mpf.make_addplot(collection_rr_df[stock.code]) for stock in collection]
     kwargs = dict(type='candle', figratio=(11, 8), figscale=0.85)
     style = mpf.make_mpf_style(base_mpf_style='yahoo', rc={'font.size':8, 'font.family': 'Source Han Sans'}, marketcolors=mc)
     fig, axes = mpf.plot(collection_rr_df, **kwargs, 
@@ -468,85 +472,11 @@ def plot_return_rate_anlys(collection, date_begin, ref=None, excess_return=False
     fig.savefig(output, dpi=300)
     plt.close(fig)
 
-# async utilities
-async def data_collector_async(stock, client, time_begin='19900101', time_end='20991231'):
-    stock_url = eastmoney_base.format(market=stock.market_id, 
-                                      bench_code=stock.code, 
-                                      time_begin=time_begin, 
-                                      time_end=time_end)
-    try:
-        response = await client.request(method='GET', url=stock_url)
-        response_json = await response.json()
-        stock_data = pd.DataFrame(map(lambda x: x.split(','), response_json["data"]["klines"]))
-    except HTTPError as e:
-        raise QueryError(f"HTTP error: {e}") from e
-    except TypeError as e:
-        raise QueryError("Can't find kline data") from e
-    stock_data.columns = ["date", "open", "close", "high", "low", "volume", "money", "change"]
-    stock_data["date"] = pd.to_datetime(stock_data["date"])
-    return stock_data
-
-# @timing_async
-async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='20991231', time_ref='latest'):
-    """
-    Collecting and postprocessing for Stock_mix, where only close price are collected
-    Noted that long time range can cause date inconsistency
-    """
-    # using the same client instead of creating everytime may improve the performance
-    async with aiohttp.ClientSession() as client: 
-        # stock_data: list of pd.df
-        stock_data = await asyncio.gather(*[data_collector_async(stock, client, time_begin=time_begin, time_end=time_end) for stock in stock_mix.stock_list])
-    # Assuming that dates are inconsistent, trading suspention handled
-
-    # a more robust solution
-    collection_close_price = []
-    for i, stock in enumerate(stock_data):
-        stock_kline = stock.set_index('date')
-        stock_kline.index = pd.to_datetime(stock_kline.index)
-        stock_kline = stock_kline.astype(float)
-        stock_kline[[stock.code for stock in stock_mix.stock_list][i]] = stock_kline['close']
-        collection_close_price.append(stock_kline[[stock.code for stock in stock_mix.stock_list][i]])
-    # dealing with trade suspention
-    collection_close_price_df = reduce(lambda x, y: pd.merge(x, y, how='outer', on='date', sort=True), collection_close_price)
-    # print(collection_close_price_df)
-    collection_close_price_df = collection_close_price_df.fillna(method='ffill')
-    # print(collection_close_price_df)
-    dates_array = collection_close_price_df.index.values
-    matrix_close_price = np.transpose(collection_close_price_df.to_numpy())
-
-    # only need close price here
-    if time_ref == 'oldest':
-        date_ref_index = 0
-    elif time_ref == 'latest':
-        date_ref_index = -1
-    elif time_ref == 'created':
-        date_created_stamp = pd.to_datetime(stock_mix.create_time.date())
-        for i in range(10):
-            # range(10) is to match the buffer time for non-trading days
-            # for Stock_mix created on non-trading days
-            # we slide the dates_array by step of 1 day to find the nearest previous trading day
-            try:
-                date_ref_index = np.where((dates_array - np.timedelta64(i, 'D')) == date_created_stamp)[0][0]
-                break
-            except IndexError:
-                pass
-    else:
-        raise ValueError
-    close_price_ref = matrix_close_price[:, date_ref_index]
-    stock_share_ratios = stock_mix.holding_ratio / close_price_ref
-    value_mix = np.average(matrix_close_price, axis=0, weights=stock_share_ratios) 
-    value_mix = value_mix / value_mix[date_ref_index] # norm to 1
-    mix_data = pd.DataFrame(dates_array, columns=['date'])
-    mix_data['close'] = value_mix
-    # mix_data['volume'] = volume_mix
-    # Data redundancy, rather inelegant here, might go PR on mplfinance (or simplily using plot instead)
-    place_holder = np.empty(len(mix_data))
-    place_holder[:] = np.nan
-    mix_data['low'] = mix_data['open'] = mix_data['high'] = place_holder
-    return mix_data, matrix_close_price # to be used in profit analysis
-
-# generate Stock_mix
+# HELPER FUNCTIONS
 def gen_stock_mix(mix_code, mix_name, stock_names, holding_ratios, create_time):
+    """
+    generate Stock_mix
+    """
     stock_list = []
     candidate_list = {}
     for stock_name in stock_names:
@@ -564,14 +494,19 @@ def gen_stock_mix(mix_code, mix_name, stock_names, holding_ratios, create_time):
     # print(stock_mix)
     return stock_mix
 
+def get_time_range(day_interval=120):
+    """
+    return ({day_interval} days ago, today + 1)
+    """
+    time_end = datetime.datetime.utcnow() + datetime.timedelta(days=1)
+    time_begin = time_end - datetime.timedelta(days=day_interval)
+    return (time_begin.strftime("%Y%m%d"), time_end.strftime("%Y%m%d"))
+    
 async def main():
     # kline plot test
     # x = stock_query('000300', echo=True)[0].collect_data(time_begin='20210101')
     # plot_kline(x, title='test_kline', plot_type='candle', volume=True, macd=True)
 
-    # Query test
-    # _query_test(_test_stock_code_CN)
-    # _query_test(_test_stock_HK)
     # Stock_mix test
     # enl_stock_name = [] # a list of query keywords
     # enl_stock_ratio = [1 / len(enl_stock_name)] * len(enl_stock_name)
@@ -582,7 +517,7 @@ async def main():
 
     enl_stock_mix = stock_query('enl001')[0]
     # enl_stock_mix.draw()
-    mix_data, matrix_close_price = mix_data_collector(enl_stock_mix)
+    mix_data_async, matrix_close_price_async = await mix_data_collector_async(enl_stock_mix)
     # datetime_yesterday = datetime.datetime.utcnow() - datetime.timedelta(days=1)
     # profit_ratio, stock_profit_ratio = enl_stock_mix.get_profit_ratio(mix_data, matrix_close_price, date_ref=datetime_yesterday)
     # print(profit_ratio)
@@ -591,16 +526,9 @@ async def main():
     # matplotlib.rcParams['font.family'] = ['Source Han Sans']
     # plot_profitline(mix_data, profit_ratio)
     # plot_stock_profit(enl_stock_mix, stock_profit_ratio)
-
-    # Async test
-    mix_data_async, matrix_close_price_async = await mix_data_collector_async(enl_stock_mix)
     return mix_data_async, matrix_close_price_async 
 
 
 if __name__ == '__main__':
-    # loop = asyncio.get_event_loop()
-    # mix_data_async, matrix_close_price_async = loop.run_until_complete(main())
-    while True:
-        n = input()
-        x = stock_query('哔哩', echo=True)[0].collect_data_live()
-    plot_kline(x, title='test_live', plot_type='line', volume=True, macd=False)
+    loop = asyncio.get_event_loop()
+    mix_data_async, matrix_close_price_async = loop.run_until_complete(main())

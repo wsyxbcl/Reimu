@@ -30,13 +30,6 @@ logging.basicConfig(filename="./hakurei_bot.log",
 bot = Bot(token=config["telegram"]["token"])
 dp = Dispatcher(bot)
 
-def get_time_range(day_interval=120):
-    """
-    return ({day_interval} days ago, today + 1)
-    """
-    time_end = datetime.datetime.utcnow() + datetime.timedelta(days=1)
-    time_begin = time_end - datetime.timedelta(days=day_interval)
-    return (time_begin.strftime("%Y%m%d"), time_end.strftime("%Y%m%d"))
 
 @dp.message_handler(commands=['start'])
 async def send_welcome(message):
@@ -73,10 +66,9 @@ async def kline(message, query=None):
 
     if len(stock_list) == 1:
         stock = stock_list[0]
-        if stock_info := stock.company_info:
-            stock_info = f"[INFO]({stock_info})"
         buf = io.BytesIO()
         if type(stock) == Stock_mix:
+            stock_info = ''
             time_mix_created = stock.create_time.strftime("%Y%m%d")
             if args.days is None:
                 time_begin = time_mix_created
@@ -88,15 +80,18 @@ async def kline(message, query=None):
                                                                time_ref='created')
             plot_kline(stock_data=stock_data, title=f'kline of {stock.code}',
                        plot_type='line', volume=False, macd=macd, output=buf)
-        else:        
+        else:
+            if stock_info := stock.company_info:
+                stock_info = f"[INFO]({stock_info})"
             plot_kline(stock_data=stock.collect_data_daily(time_begin, time_end), 
                        title=f'kline of {stock.code}', macd=macd, output=buf)
         buf.seek(0)
+        kline_caption = (' '.join([stock.code, stock.name, stock_info])).replace('*', '\*') # A-share sucks!
         if args.md5:
             # Not open to user input, can only result from inline keyboard callback
-            await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=' '.join([stock.code, stock.name, stock_info]), parse_mode=ParseMode.MARKDOWN))
+            await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=kline_caption, parse_mode=ParseMode.MARKDOWN))
         else:
-            await message.reply_photo(buf, caption=' '.join([stock.code, stock.name, stock_info]), parse_mode=ParseMode.MARKDOWN)
+            await message.reply_photo(buf, caption=kline_caption, parse_mode=ParseMode.MARKDOWN)
     else:
         # get user's selection from inline keyboard
         keyboard_markup = types.InlineKeyboardMarkup()
@@ -140,7 +135,7 @@ async def define(message):
     logging.info(f'creating stock mix:{stock_mix}')
     if type(stock_mix) is dict:
         candidate_list = stock_mix
-        await message.reply("Try using code to specify following stocks:\n"+str(candidate_list), parse_mode=ParseMode.MARKDOWN)
+        await message.reply("Try using code to specify following stocks:\n"+str(candidate_list).replace('*', '\*'), parse_mode=ParseMode.MARKDOWN)
         return 2
     buf = io.BytesIO()
     stock_mix.draw(output=buf)
@@ -224,14 +219,17 @@ async def now(message, query=None):
             await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+\
                                                 "\nLatest return rate: {:.2%}".format(profit_ratio[-1]))
         else:
+            if stock_info := stock.company_info:
+                stock_info = f"[INFO]({stock_info})"
             plot_kline(stock_data=stock.collect_data_live(), 
                        title=f'Live price of {stock.code} (UTC+8)', plot_type='line', volume=True, macd=False, output=buf)
             buf.seek(0)
+            now_caption = (' '.join([stock.code, stock.name, stock_info])).replace('*', '\*') # A-share sucks!
             if args.md5:
                 # Not open to user input, can only result from inline keyboard callback
-                await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=stock.code+' '+stock.name))
+                await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=now_caption, parse_mode=ParseMode.MARKDOWN))
             else:
-                await message.reply_photo(buf, caption=stock.code+' '+stock.name)
+                await message.reply_photo(buf, caption=now_caption, parse_mode=ParseMode.MARKDOWN)
     else:
         # get user's selection from inline keyboard
         keyboard_markup = types.InlineKeyboardMarkup()
@@ -266,9 +264,9 @@ async def compare(message):
     time_begin, _ = get_time_range(int(args.days))
     stock_list = [stock_query(keyword)[0] for keyword in args.stocks]
     buf = io.BytesIO()
-    plot_return_rate_anlys(stock_list, date_begin=time_begin, output=buf)
+    await plot_return_rate_anlys_async(stock_list, date_begin=time_begin, output=buf)
     buf.seek(0)
-    await message.reply_photo(buf, caption='return rates from '+time_begin)
+    await message.reply_photo(buf, caption='')
     
 # To get photo file_id
 # @dp.message_handler(content_types=['photo'])
