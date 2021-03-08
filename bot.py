@@ -183,7 +183,6 @@ async def status(message):
                                                    "\nCurrent return rate: {:.2%}".format(profit_ratio[-1]))
     else:
         pass
-        #TODO if there will be company status
 
 @dp.message_handler(commands=['now'])
 async def now(message, query=None):
