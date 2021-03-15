@@ -79,7 +79,7 @@ class Stock:
                                           time_end=time_end)
         try:
             stock_data = pd.DataFrame(map(lambda x: x.split(','), 
-                                      requests.get(stock_url, timeout=3).json()["data"]["klines"]))
+                                      requests.get(stock_url, timeout=5).json()["data"]["klines"]))
         except TypeError as e:
             raise QueryError("Can't find kline data") from e
         stock_data.columns = ["date", "open", "close", "high", "low", "volume", "money", "change"]
