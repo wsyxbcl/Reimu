@@ -485,8 +485,8 @@ def get_time_range(day_interval=120):
     
 async def main():
     # kline plot test
-    # x = stock_query('000300', echo=True)[0].collect_data(time_begin='20210101')
-    # plot_kline(x, title='test_kline', plot_type='candle', volume=True, macd=True)
+    x = stock_query('000300', echo=True)[0].collect_data_daily(time_begin='20210101')
+    plot_kline(x, title='test_kline', plot_type='hollow_candle', volume=True, macd=True)
 
     # Stock_mix test
     # enl_stock_name = [] # a list of query keywords
