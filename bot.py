@@ -38,8 +38,8 @@ async def send_welcome(message):
 
 @dp.message_handler(commands=['help'])
 async def send_help(message):
-    await message.reply("Current functions are: \n\
-                        /kline, /status, /now and /status, \
+    await message.reply("Current functions are: \
+                        /kline, /status, /now /define and /compare, \
                         parameters are retrieved using argparse, add -h accordingly for detail.")
 
 @dp.message_handler(commands=['kline'])
