@@ -33,14 +33,14 @@ dp = Dispatcher(bot)
 
 @dp.message_handler(commands=['start'])
 async def send_welcome(message):
-    await message.reply("""Busy in stock trading, no time for talk.\n
-                        /help if you need, contribute or build your own from https://github.com/wsyxbcl/Reimu""") 
+    await message.reply("Busy in stock trading, no time for talk.\n"
+                        "/help if you need, contribute or build your own from https://github.com/wsyxbcl/Reimu") 
 
 @dp.message_handler(commands=['help'])
 async def send_help(message):
-    await message.reply("""Current functions are: 
-                        /kline, /status, /now /define and /compare, 
-                        parameters are retrieved using argparse, add -h accordingly for detail.""")
+    await message.reply("Current functions are: \n"
+                        "/kline, /status, /now /define and /compare, "
+                        "parameters are retrieved using argparse, add -h accordingly for detail.")
 
 @dp.message_handler(commands=['kline'])
 async def kline(message, query=None):
