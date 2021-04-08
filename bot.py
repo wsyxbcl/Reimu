@@ -84,7 +84,7 @@ async def kline(message, query=None):
             if stock_info := stock.company_info:
                 stock_info = f"[INFO]({stock_info})"
             plot_kline(stock_data=stock.collect_data_daily(time_begin, time_end), 
-                       title=f'kline of {stock.code}', macd=macd, output=buf)
+                       title=f'kline of {stock.code}', plot_type='hollow_candle', macd=macd, output=buf)
         buf.seek(0)
         kline_caption = (' '.join([stock.code, stock.name, stock_info])).replace('*', '\*') # A-share sucks!
         if args.md5:
@@ -183,7 +183,6 @@ async def status(message):
                                                    "\nCurrent return rate: {:.2%}".format(profit_ratio[-1]))
     else:
         pass
-        #TODO if there will be company status
 
 @dp.message_handler(commands=['now'])
 async def now(message, query=None):
