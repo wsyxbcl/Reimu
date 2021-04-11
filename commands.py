@@ -51,7 +51,7 @@ def argparse_define(message):
 def argparse_xqimport(message):
     """
     Usage: /xqimport [OPTION] XQ_PORTFOLIO_CODE QUERY_CODE
-    Create a new portfolio according to an existing Xueqiu portfolio and set a QUERT_CODE to use other functions of this bot.
+    Create a new portfolio according to an existing Xueqiu portfolio and set a QUERY_CODE to use other functions of this bot.
     
     Options:
         -n <preferred_name>    set a different name from that displayed on Xueqiu website

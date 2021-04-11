@@ -56,12 +56,12 @@ class XQpf:
 
 def connectxq(xqcode):
     if not xqcode.startswith('ZH'):
-        raise ValueError('Porfolio code should start with ZH.')
+        raise ValueError('Portfolio code should start with ZH.')
     
     else:
         webpage = requests.get(f'https://xueqiu.com/p/{xqcode}', headers=headers)
         if webpage.status_code!=200:
-            raise ValueError('Cannot find the porfolio, please check your code and web connection.')
+            raise ValueError('Failed to retrieve portfolio data, please check your code and network connection.')
         else:
             xqsoup = BeautifulSoup(webpage.text, 'html.parser')
     return xqsoup
