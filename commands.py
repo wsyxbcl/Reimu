@@ -48,6 +48,27 @@ def argparse_define(message):
     args, _ = parser.parse_known_args(command[1:])
     return args
 
+def argparse_xqimport(message):
+    """
+    Usage: /xqimport [OPTION] XQ_PORTFOLIO_CODE QUERY_CODE
+    Create a new portfolio according to an existing Xueqiu portfolio and set a QUERT_CODE to use other functions of this bot.
+    
+    Options:
+        -n <preferred_name>    set a different name from that displayed on Xueqiu website
+        -h                     show help message
+    
+    Examples:
+        /xqimport ZH000001 xq001
+        /xqimport ZH000002 xq002 -n RunAwayNow
+    """
+    command = message.split(' ')
+    parser = argparse.ArgumentParser(add_help=False, exit_on_error=False)
+    parser.add_argument('-n', dest='preferred_name')
+    parser.add_argument('-h', dest='help', action='store_true')
+    parser.add_argument('codes', nargs='*')
+    args, _ = parser.parse_known_args(command[1:])
+    return args
+
 def argparse_status(message):
     """
     Usage: /status [OPTION] PORTFOLIO_CODE

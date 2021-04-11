@@ -463,7 +463,8 @@ def gen_stock_mix(mix_code, mix_name, stock_names, holding_ratios, create_time):
     stock_list = []
     candidate_list = {}
     for stock_name in stock_names:
-        query_result = stock_query(stock_name, filter_code=True, echo=True)
+        # To ignore indicies when creating a new portfolio.
+        query_result = [stock for stock in stock_query(stock_name, filter_code=True, echo=True) if stock.type_id != '5']
         if len(query_result) == 1:
             stock_list.append(query_result[0])
         else:
