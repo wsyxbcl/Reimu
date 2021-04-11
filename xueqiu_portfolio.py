@@ -5,14 +5,14 @@ This provides some useful functions to retreive information of Xueqiu Portfolios
 
 Some functions are still under development, and they are commented out to aviod unnecessary dependency.
 '''
+import datetime
+from textwrap import dedent
+# import toml
 
 from bs4 import BeautifulSoup
 import requests
-import datetime
-import numpy as np
+# import numpy as np
 import pandas as pd
-from textwrap import dedent
-import toml
 
 # from chinese_calendar import is_holiday
 
@@ -32,7 +32,7 @@ class Porfolio(object): # Pending further research and design
     pass
  """
 
-class XQpf(object):
+class XQpf:
     def __init__(self, code, name):
         self.code = code
         self.name = name
@@ -41,13 +41,13 @@ class XQpf(object):
         update_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         return_rates = get_return_rate(self.code)
         update = f'''
-        {self.name}
-        更新时间：{update_time}
-        最新净值：{return_rates['nv']}
-        最新涨幅：{return_rates['dr']}
-        累计涨幅：{return_rates['r']}
-        组合链接：https://xueqiu.com/p/{self.code}
-        '''
+            {self.name}
+            更新时间：{update_time}
+            最新净值：{return_rates['nv']}
+            最新涨幅：{return_rates['dr']}
+            累计涨幅：{return_rates['r']}
+            组合链接：https://xueqiu.com/p/{self.code}
+            '''
         return dedent(update)
     
     def asset_list(self):
