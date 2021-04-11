@@ -12,8 +12,11 @@ from aiogram.types import InlineQuery, ParseMode, message, \
 import matplotlib.font_manager
 
 from utils import *
-from commands import argparse_kline, argparse_define, argparse_status, argparse_now, argparse_compare
+from XPT import *
+from commands import argparse_kline, argparse_define, argparse_xqimport, argparse_status, argparse_now, argparse_compare
 
+import sys
+sys.setrecursionlimit(10000) # To support the usage of bs4
 
 _market_emoji =  {"SZ": '🇨🇳', "SH": '🇨🇳', "US": '🇺🇸', "NASDAQ": '🇺🇸', "NYSE": '🇺🇸', "AMEX": '🇺🇸', "HK": '🇭🇰'}
 # file id for the picture, i.e. placeholder of inline keyboard
@@ -33,7 +36,7 @@ dp = Dispatcher(bot)
 
 @dp.message_handler(commands=['start'])
 async def send_welcome(message):
-    await message.reply("Busy in stock trading, no time for talk.\n"
+    await message.reply("Busy in stock trading, no time for talks.\n"
                         "/help if you need, contribute or build your own from https://github.com/wsyxbcl/Reimu") 
 
 @dp.message_handler(commands=['help'])
@@ -101,7 +104,7 @@ async def kline(message, query=None):
                                 callback_data=' '.join(filter(None, ['/kline', time_arg, '-e', stock.md5, args.keyword[0]]))))
         # add exit button
         keyboard_markup.row(types.InlineKeyboardButton('exit', callback_data='exit'))
-        await message.reply_photo(_file_id_inline, caption="Find multiple results", reply_markup=keyboard_markup)
+        await message.reply_photo(_file_id_inline, caption="Found multiple results", reply_markup=keyboard_markup)
 
 @dp.callback_query_handler(lambda cb: '/kline' in cb.data)
 @dp.callback_query_handler(text='exit') #TODO need expection on multi-user behavior?
@@ -135,8 +138,38 @@ async def define(message):
     logging.info(f'creating stock mix:{stock_mix}')
     if type(stock_mix) is dict:
         candidate_list = stock_mix
-        await message.reply("Try using code to specify following stocks:\n"+str(candidate_list).replace('*', '\*'), parse_mode=ParseMode.MARKDOWN)
+        await message.reply("Try using codes to specify the following stocks:\n"+str(candidate_list).replace('*', '\*'), parse_mode=ParseMode.MARKDOWN)
         return 2
+    buf = io.BytesIO()
+    stock_mix.draw(output=buf)
+    buf.seek(0)
+    await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+" created")
+
+@dp.message_handler(commands=['xqimport'])
+async def xqimport(message):
+    try:
+        args = argparse_xqimport(message.text)
+    except argparse.ArgumentError:
+        pass
+    if args.help:
+        await message.reply(argparse_xqimport.__doc__)
+        return 0
+    logging.info(f'{message.chat.id}: {message.text}')
+    try:
+        (xqcode, query_code) = args.codes
+    except ValueError:
+        raise #Wrong command received
+    if args.preferred_name is None:
+        name = get_pfdata(xqcode)['name']
+    else:
+        name = args.preferred_name
+    asset_list = get_asset_list(xqcode)
+    stock_list = list(asset_list['Code'])
+    holding_ratio = [float(weight.strip('%')) for weight in list(asset_list['Weight'])]
+    stock_mix = gen_stock_mix(query_code, name, stock_names=stock_list, holding_ratios=holding_ratio, create_time=datetime.datetime.utcnow())
+    if type(stock_mix) is dict:
+        candidate_list = stock_mix
+        
     buf = io.BytesIO()
     stock_mix.draw(output=buf)
     buf.seek(0)
