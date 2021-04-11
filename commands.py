@@ -58,8 +58,8 @@ def argparse_xqimport(message):
         -h                     show help message
     
     Examples:
-        /define ZH000001 xq001
-        /define ZH000002 xq002 -n RunAwayNow
+        /xqimport ZH000001 xq001
+        /xqimport ZH000002 xq002 -n RunAwayNow
     """
     command = message.split(' ')
     parser = argparse.ArgumentParser(add_help=False, exit_on_error=False)
