@@ -4,6 +4,7 @@ import hashlib
 import io
 import logging
 import re
+import sys
 import toml
 
 from aiogram import Bot, Dispatcher, executor, types
@@ -12,10 +13,9 @@ from aiogram.types import InlineQuery, ParseMode, message, \
 import matplotlib.font_manager
 
 from utils import *
-from XPT import *
 from commands import argparse_kline, argparse_define, argparse_xqimport, argparse_status, argparse_now, argparse_compare
+import xueqiu_portfolio
 
-import sys
 sys.setrecursionlimit(10000) # To support the usage of bs4
 
 _market_emoji =  {"SZ": '🇨🇳', "SH": '🇨🇳', "US": '🇺🇸', "NASDAQ": '🇺🇸', "NYSE": '🇺🇸', "AMEX": '🇺🇸', "HK": '🇭🇰'}
@@ -138,7 +138,7 @@ async def define(message):
     logging.info(f'creating stock mix:{stock_mix}')
     if type(stock_mix) is dict:
         candidate_list = stock_mix
-        await message.reply("Try using codes to specify the following stocks:\n"+str(candidate_list).replace('*', '\*'), parse_mode=ParseMode.MARKDOWN)
+        await message.reply("Try using code to specify the following stocks:\n"+str(candidate_list).replace('*', '\*'), parse_mode=ParseMode.MARKDOWN)
         return 2
     buf = io.BytesIO()
     stock_mix.draw(output=buf)
@@ -160,16 +160,14 @@ async def xqimport(message):
     except ValueError:
         raise #Wrong command received
     if args.preferred_name is None:
-        name = get_pfdata(xqcode)['name']
+        name = xueqiu_portfolio.get_pfdata(xqcode)['name']
     else:
         name = args.preferred_name
-    asset_list = get_asset_list(xqcode)
+    asset_list = xueqiu_portfolio.get_asset_list(xqcode)
     stock_list = list(asset_list['Code'])
     holding_ratio = [float(weight.strip('%')) for weight in list(asset_list['Weight'])]
     stock_mix = gen_stock_mix(query_code, name, stock_names=stock_list, holding_ratios=holding_ratio, create_time=datetime.datetime.utcnow())
-    if type(stock_mix) is dict:
-        candidate_list = stock_mix
-        
+    
     buf = io.BytesIO()
     stock_mix.draw(output=buf)
     buf.seek(0)
