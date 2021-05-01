@@ -137,7 +137,7 @@ class Stock_mix:
         
     def get_profit_ratio(self, mix_data, matrix_close_price, date_ref=None):
         """
-        # mix_data is actrually reduntand, included here just for convinence. 
+        # mix_data is actually reduntand, included here just for convinence. 
         # date_ref == 'latest': return profit_ratio based on the latest two days (dirty fix for /now
         """
         if date_ref == 'latest':
@@ -411,8 +411,9 @@ async def plot_return_rate_anlys_async(collection, date_begin, ref=None, excess_
             stock_kline = stock_kline.set_index('date')
             stock_kline.index = pd.to_datetime(stock_kline.index)
             stock_kline = stock_kline.astype(float)
-            stock_kline[stock.name] = (stock_kline['close'] - stock_kline['close'][ref_idx]) / stock_kline['close'][ref_idx]
-            collection_rr.append(stock_kline[stock.name])
+            stock.identifier = stock.name + '  ' + stock.code
+            stock_kline[stock.identifier] = (stock_kline['close'] - stock_kline['close'][ref_idx]) / stock_kline['close'][ref_idx]
+            collection_rr.append(stock_kline[stock.identifier])
     elif collection_type is Stock_mix:
         # collection_data: (mix_data, mix_close_price)
         collection_data = await asyncio.gather(*[mix_data_collector_async(stock_mix, time_begin=(stock_mix.create_time - datetime.timedelta(days=9)).strftime("%Y%m%d")) for stock_mix in collection])
@@ -438,7 +439,7 @@ async def plot_return_rate_anlys_async(collection, date_begin, ref=None, excess_
     collection_rr_df['close'] = collection_rr_df['low'] = collection_rr_df['open'] = collection_rr_df['high'] = place_holder
 
     if collection_type is Stock:
-        apdict = [mpf.make_addplot(collection_rr_df[stock.name]) for stock in collection]
+        apdict = [mpf.make_addplot(collection_rr_df[stock.identifier]) for stock in collection]
     elif collection_type is Stock_mix:
         apdict = [mpf.make_addplot(collection_rr_df[stock.code]) for stock in collection]
     kwargs = dict(type='candle', figratio=(11, 8), figscale=0.85)
@@ -450,7 +451,7 @@ async def plot_return_rate_anlys_async(collection, date_begin, ref=None, excess_
                          ylabel='Return rate', 
                          addplot=apdict)
     axes[0].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1.0))
-    legend = axes[0].legend([stock.name for stock in collection], prop={'size': 7}, fancybox=True, borderaxespad=0.)
+    legend = axes[0].legend([stock.identifier for stock in collection], prop={'size': 7}, fancybox=True, borderaxespad=0.)
     legend.get_frame().set_alpha(0.4)
     fig.savefig(output, dpi=300)
     plt.close(fig)
