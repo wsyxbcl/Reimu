@@ -201,7 +201,7 @@ def stock_query(keyword, filter_md5=None, filter_code=None, echo=False):
     if not '@' in keyword:
         mkt_to_search = market_group['ALL']
     else:
-        mkt_to_search = market_group[keyword[keyword.index('@')+1:]]
+        mkt_to_search = market_group[keyword[keyword.index('@')+1:].upper()]
         keyword = keyword[:keyword.index('@')]
         
     if (local_stock := (keyword+'.pickle')) in os.listdir(data_path):
