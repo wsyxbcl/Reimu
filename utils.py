@@ -198,10 +198,12 @@ def stock_query(keyword, filter_md5=None, filter_code=None, echo=False):
     borrowed from https://github.com/pengnanxiaomeimei/stock_data_analysis/
     Not ideal but works.
     """
-    if not '@' in keyword:
+    try:
+        # Using '@' to restrick the stock market
+        mkt_to_search = market_group[keyword[keyword.index('@')+1:].upper()]
+    except (KeyError, ValueError):
         mkt_to_search = market_group['ALL']
     else:
-        mkt_to_search = market_group[keyword[keyword.index('@')+1:].upper()]
         keyword = keyword[:keyword.index('@')]
         
     if (local_stock := (keyword+'.pickle')) in os.listdir(data_path):
