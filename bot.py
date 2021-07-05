@@ -189,7 +189,7 @@ async def status(message):
         for f in results:
             with open(os.path.join(data_path, f), 'rb') as fp:
                 portfolios.append(pickle.load(fp))
-        await message.reply('\n'.join([portfolio.__repr__ for portfolio in portfolios]))
+        await message.reply('\n'.join([portfolio.__repr__() for portfolio in portfolios]))
         return 0
     stock_list = stock_query(keyword=args.stock_mix_code)
     logging.info(f'query result:{stock_list}')
