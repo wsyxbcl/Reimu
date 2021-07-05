@@ -84,6 +84,7 @@ def argparse_status(message):
     parser.add_argument('-d', dest='detail', action='store_true')
     parser.add_argument('-l', dest='ls', action='store_true')
     parser.add_argument('-h', dest='help', action='store_true')
+    parser.add_argument('-q', dest='query', action='store_true')
     parser.add_argument('stock_mix_code', nargs='?')
     args, _ = parser.parse_known_args(command[1:])
     return args
