@@ -183,6 +183,14 @@ async def status(message):
     if args.help:
         await message.reply(argparse_status.__doc__)
         return 0
+    if args.query:
+        results = [f for f in os.listdir(data_path) if args.stock_mix_code in f]
+        portfolios = []
+        for f in results:
+            with open(os.path.join(data_path, f), 'rb') as fp:
+                portfolios.append(pickle.load(fp))
+        await message.reply('\n'.join([portfolio.__repr__() for portfolio in portfolios]))
+        return 0
     stock_list = stock_query(keyword=args.stock_mix_code)
     logging.info(f'query result:{stock_list}')
     if len(stock_list) == 1 and type(stock_mix := stock_list[0]) is Stock_mix:

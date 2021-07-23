@@ -32,6 +32,11 @@ stock_market =  {'0': "SZ", '1': "SH",
 stock_type = {'1': "沪A", '25': "科创板", '2': "深A", '8': "基金", '5': "指数", 
               '19': "港股", '6': "港股"} # SecurityType: SecurityTypeName
 
+market_group = {'A': ['0', '1'], 
+                'H': ['116'],
+                'HK': ['116'], 
+                'US': ['105', '106', '107', '156', '100'],
+                'ALL': list(stock_market.keys())}
 
 class QueryError(Exception):
     def __init__(self, message):
@@ -193,6 +198,14 @@ def stock_query(keyword, filter_md5=None, filter_code=None, echo=False):
     borrowed from https://github.com/pengnanxiaomeimei/stock_data_analysis/
     Not ideal but works.
     """
+    try:
+        # Using '@' to restrick the stock market
+        mkt_to_search = market_group[keyword[keyword.index('@')+1:].upper()]
+    except (KeyError, ValueError):
+        mkt_to_search = market_group['ALL']
+    else:
+        keyword = keyword[:keyword.index('@')]
+        
     if (local_stock := (keyword+'.pickle')) in os.listdir(data_path):
         with open(os.path.join(data_path, local_stock), 'rb') as f:
             local_stock = pickle.load(f)
@@ -222,7 +235,7 @@ def stock_query(keyword, filter_md5=None, filter_code=None, echo=False):
         raise QueryError(f"Can't find keyword {keyword}") from e
     query_result = mes_dict['QuotationCodeTable']['Data']
     stock_list = [Stock(code=x['Code'], name=x['Name'], market_id=x['MktNum'], type_id=x['SecurityType']) 
-                  for x in query_result if x['MktNum'] in stock_market and \
+                  for x in query_result if x['MktNum'] in mkt_to_search and \
                                            (x['SecurityType'] in stock_type or x['Classify'] == "UsStock" or x['Classify'] == "UniversalIndex") and \
                                            x["SecurityTypeName"] != "曾用"]
     if filter_md5:
