@@ -3,9 +3,11 @@ import datetime
 import hashlib
 import io
 import logging
+import random
 import re
 import sys
 import toml
+import time
 
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import InlineQuery, ParseMode, message, \
@@ -248,6 +250,7 @@ async def now(message, query=None):
                 time_begin = stock_mix.create_time.strftime("%Y%m%d")
             datetime_ref = (datetime.datetime.utcnow() - datetime.timedelta(days=30)).strftime("%Y%m%d") # refer to last trading day
             stock_data, matrix_close_price = await mix_data_collector_async(stock_mix, time_begin=datetime_ref)
+            time.sleep(random.randint(0,3))
             profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, 
                                                                         date_ref='latest')
             plot_stock_profit(stock_mix, stock_profit_ratio, 

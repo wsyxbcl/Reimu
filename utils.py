@@ -24,6 +24,7 @@ _test_path = './demo'
 # fqt=1: split-adjusted price
 eastmoney_base = "http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={market}.{bench_code}&fields1=f1%2Cf2%2Cf3%2Cf4%2Cf5&fields2=f51%2Cf52%2Cf53%2Cf54%2Cf55%2Cf56%2Cf57%2Cf58&klt=101&fqt=1&beg={time_begin}&end={time_end}"
 eastmoney_base_live = "http://push2.eastmoney.com/api/qt/stock/trends2/get?fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57,f58&ut=fa5fd1943c7b386f172d6893dbfba10b&iscr=0&ndays=1&secid={market}.{bench_code}"
+headers = {'user-agent': "Mozilla/5.0 (X11; Linux x86_64; rv:92.0) Gecko/20100101 Firefox/92.0"}
 
 # FILTERS
 # "TypeUS" seems to be a strong parameter, but with uncertainty 
@@ -84,7 +85,7 @@ class Stock:
                                           time_end=time_end)
         try:
             stock_data = pd.DataFrame(map(lambda x: x.split(','), 
-                                      requests.get(stock_url, timeout=5).json()["data"]["klines"]))
+                                      requests.get(stock_url, timeout=10, headers=headers).json()["data"]["klines"]))
         except TypeError as e:
             raise QueryError("Can't find kline data") from e
         stock_data.columns = ["date", "open", "close", "high", "low", "volume", "money", "change"]
@@ -96,7 +97,7 @@ class Stock:
                                                bench_code=self.code)
         try:
             stock_data = pd.DataFrame(map(lambda x: x.split(','), 
-                                      requests.get(stock_url, timeout=3).json()["data"]["trends"]))
+                                      requests.get(stock_url, timeout=3, headers=headers).json()["data"]["trends"]))
         except TypeError as e:
             raise QueryError("Can't find kline data") from e
         stock_data.columns = ["date", "open", "close", "high", "low", "volume", "money", "change"] # follow mpf convention
@@ -226,7 +227,7 @@ def stock_query(keyword, filter_md5=None, filter_code=None, echo=False):
     str_parameter += '&_=' + str(time_stamp)
     query_url = query_url + str_parameter
 
-    r = requests.get(query_url)
+    r = requests.get(query_url, headers=headers)
     p2 = re.compile(r'[(](.*)[)]', re.S)
     result = re.findall(p2, r.content.decode('utf-8'))[0]
     try:
