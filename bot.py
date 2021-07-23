@@ -18,6 +18,8 @@ from utils import *
 from commands import argparse_kline, argparse_define, argparse_xqimport, argparse_status, argparse_now, argparse_compare
 import xueqiu_portfolio
 
+PROXY_URL = 'socks5://127.0.0.1:1080'
+
 sys.setrecursionlimit(10000) # To support the usage of bs4
 
 _market_emoji =  {"SZ": '🇨🇳', "SH": '🇨🇳', "US": '🇺🇸', "NASDAQ": '🇺🇸', "NYSE": '🇺🇸', "AMEX": '🇺🇸', "HK": '🇭🇰'}
@@ -32,7 +34,10 @@ logging.basicConfig(filename="./hakurei_bot.log",
                     level=logging.INFO)
 
 # Initialize bot and dispatcher
-bot = Bot(token=config["telegram"]["token"])
+try:
+    bot = Bot(token=config["telegram"]["token"], proxy=PROXY_URL)
+except NameError:
+    bot = Bot(token=config["telegram"]["token"])
 dp = Dispatcher(bot)
 
 
