@@ -426,6 +426,7 @@ async def plot_return_rate_anlys_async(collection, date_begin, ref=None, excess_
             stock_kline.index = pd.to_datetime(stock_kline.index)
             stock_kline = stock_kline.astype(float)
             identifier = stock.name + '  ' + stock.code
+            collection[i] = identifier
             stock_kline[identifier] = (stock_kline['close'] - stock_kline['close'][ref_idx]) / stock_kline['close'][ref_idx]
             collection_rr.append(stock_kline[identifier])
     elif collection_type is Stock_mix:
@@ -441,21 +442,23 @@ async def plot_return_rate_anlys_async(collection, date_begin, ref=None, excess_
             stock_profitline = stock_data.set_index("date")
             stock_profitline.index = pd.to_datetime(stock_profitline.index)
             stock_profitline = stock_profitline.astype(float)
-            stock_profitline[stock_mix.code] = profit_ratio
-            collection_rr.append(stock_profitline[stock_mix.code])
-                                                                            
+            identifier = stock_mix.code + '  ' + stock_mix.name
+            collection[i] = identifier
+            stock_profitline[identifier] = profit_ratio
+            collection_rr.append(stock_profitline[identifier])
+
+
     collection_rr_df = reduce(lambda x, y: pd.merge(x, y, how='outer', on='date', sort=True), collection_rr) # merge into single dataframe
     collection_rr_df = collection_rr_df.fillna(method='ffill').fillna(0.0) # second fillna for return rates before created
+    print(collection_rr_df)
 
     # create a 'base layer' placeholder for plot
     place_holder = np.empty(collection_rr_df.shape[0])
     place_holder[:] = np.nan
     collection_rr_df['close'] = collection_rr_df['low'] = collection_rr_df['open'] = collection_rr_df['high'] = place_holder
 
-    if collection_type is Stock:
-        apdict = [mpf.make_addplot(collection_rr_df[identifier]) for stock in collection]
-    elif collection_type is Stock_mix:
-        apdict = [mpf.make_addplot(collection_rr_df[stock.code]) for stock in collection]
+    apdict = [mpf.make_addplot(collection_rr_df[identifier]) for identifier in collection]
+
     kwargs = dict(type='candle', figratio=(11, 8), figscale=0.85)
     style = mpf.make_mpf_style(base_mpf_style='yahoo', rc={'font.size':8, 'font.family': 'Source Han Sans'}, marketcolors=mc)
     fig, axes = mpf.plot(collection_rr_df, **kwargs, 
@@ -465,7 +468,7 @@ async def plot_return_rate_anlys_async(collection, date_begin, ref=None, excess_
                          ylabel='Return rate', 
                          addplot=apdict)
     axes[0].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1.0))
-    legend = axes[0].legend([identifier for stock in collection], prop={'size': 7}, fancybox=True, borderaxespad=0.)
+    legend = axes[0].legend([identifier for identifier in collection], prop={'size': 7}, fancybox=True, borderaxespad=0.)
     legend.get_frame().set_alpha(0.4)
     fig.savefig(output, dpi=300)
     plt.close(fig)
