@@ -96,13 +96,15 @@ class Stock:
         stock_url = eastmoney_base_live.format(market=self.market_id, 
                                                bench_code=self.code)
         try:
+            data_live = requests.get(stock_url, timeout=3, headers=headers).json()["data"]
+            stock_preclose = data_live['preClose']
             stock_data = pd.DataFrame(map(lambda x: x.split(','), 
-                                      requests.get(stock_url, timeout=3, headers=headers).json()["data"]["trends"]))
+                                      data_live["trends"]))
         except TypeError as e:
             raise QueryError("Can't find kline data") from e
         stock_data.columns = ["date", "open", "close", "high", "low", "volume", "money", "change"] # follow mpf convention
         stock_data["date"] = pd.to_datetime(stock_data["date"])
-        return stock_data
+        return stock_data, stock_preclose
 
     def __repr__(self):
         return "<Stock code={0.code!r} name={0.name!r} market_id={0.market_id!r} type_id={0.type_id!r}>".format(self)
@@ -322,7 +324,7 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
     return mix_data, matrix_close_price # to be used in profit analysis
 
 # PLOT
-def plot_kline(stock_data, title='', plot_type='candle', volume=True, macd=False, output=os.path.join(_test_path, 'kline.jpg')):
+def plot_kline(stock_data, title='', plot_type='candle', volume=True, macd=False, live=False, preclose=None, output=os.path.join(_test_path, 'kline.jpg')):
     stock_kline = stock_data.set_index("date")
     stock_kline.index = pd.to_datetime(stock_kline.index)
     stock_kline = stock_kline.astype(float)
@@ -363,6 +365,11 @@ def plot_kline(stock_data, title='', plot_type='candle', volume=True, macd=False
         mav_leg = axes[3].legend(["MACD", "MACD Signal"], loc=9, ncol=3, 
                                 prop={'size': 7}, fancybox=True, borderaxespad=0.)
         mav_leg.get_frame().set_alpha(0.4)
+    if live:
+        price_0 = preclose
+        pct_axe = axes[0].secondary_yaxis('left', 
+            functions=(lambda x: (x - price_0) / price_0, lambda x: price_0 * (1 + x)))
+        pct_axe.set_ylabel("Percentage")
     axes[0].set_title(title)
     fig.savefig(output, dpi=300)
     plt.close(fig)
@@ -502,6 +509,13 @@ def get_time_range(day_interval=120):
     time_begin = time_end - datetime.timedelta(days=day_interval)
     return (time_begin.strftime("%Y%m%d"), time_end.strftime("%Y%m%d"))
     
+def price_to_percentage(x, price_0):
+    return (x - price_0) / price_0
+
+def percentage_to_price(x, price_0):
+    return price_0 * (1 + x)
+
+
 async def main():
     # kline plot test
     x = stock_query('000300', echo=True)[0].collect_data_daily(time_begin='20210101')

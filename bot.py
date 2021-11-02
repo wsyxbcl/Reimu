@@ -265,7 +265,8 @@ async def now(message, query=None):
         else:
             if stock_info := stock.company_info:
                 stock_info = f"[INFO]({stock_info})"
-            plot_kline(stock_data=stock.collect_data_live(), 
+            stock_data, stock_preclose = stock.collect_data_live()
+            plot_kline(stock_data=stock_data, live=True, preclose=stock_preclose,
                        title=f'Live price of {stock.code} (UTC+8)', plot_type='line', volume=True, macd=False, output=buf)
             buf.seek(0)
             now_caption = (' '.join([stock.code, stock.name, stock_info])).replace('*', '\*') # A-share sucks!
