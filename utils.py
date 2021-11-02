@@ -508,13 +508,6 @@ def get_time_range(day_interval=120):
     time_end = datetime.datetime.utcnow() + datetime.timedelta(days=1)
     time_begin = time_end - datetime.timedelta(days=day_interval)
     return (time_begin.strftime("%Y%m%d"), time_end.strftime("%Y%m%d"))
-    
-def price_to_percentage(x, price_0):
-    return (x - price_0) / price_0
-
-def percentage_to_price(x, price_0):
-    return price_0 * (1 + x)
-
 
 async def main():
     # kline plot test
