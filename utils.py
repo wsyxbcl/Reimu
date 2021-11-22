@@ -357,10 +357,10 @@ def plot_kline(stock_data, title='', plot_type='candle', volume=True, macd=False
                          style=style, 
                          scale_padding={'left': 0.4, 'top': 1, 'right': 1, 'bottom': 1}, 
                          returnfig=True)
-    if ma_value:
-        mav_leg = axes[0].legend(['ma_{}'.format(i) for i in ma_value], loc=9, ncol=3, 
-                                prop={'size': 7}, fancybox=True, borderaxespad=0.)
-        mav_leg.get_frame().set_alpha(0.4)
+    # if ma_value:
+    #     mav_leg = axes[0].legend(['ma_{}'.format(i) for i in ma_value], loc=9, ncol=3, 
+    #                             prop={'size': 7}, fancybox=True, borderaxespad=0.)
+    #     mav_leg.get_frame().set_alpha(0.4)
     if macd:
         mav_leg = axes[3].legend(["MACD", "MACD Signal"], loc=9, ncol=3, 
                                 prop={'size': 7}, fancybox=True, borderaxespad=0.)
