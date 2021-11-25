@@ -357,10 +357,10 @@ def plot_kline(stock_data, title='', plot_type='candle', volume=True, macd=False
                          style=style, 
                          scale_padding={'left': 0.4, 'top': 1, 'right': 1, 'bottom': 1}, 
                          returnfig=True)
-    # if ma_value:
-    #     mav_leg = axes[0].legend(['ma_{}'.format(i) for i in ma_value], loc=9, ncol=3, 
-    #                             prop={'size': 7}, fancybox=True, borderaxespad=0.)
-    #     mav_leg.get_frame().set_alpha(0.4)
+    if ma_value:
+        mav_leg = axes[0].legend(['ma_{}'.format(i) for i in ma_value], loc=9, ncol=3, 
+                                prop={'size': 7}, fancybox=True, borderaxespad=0.)
+        mav_leg.get_frame().set_alpha(0.4)
     if macd:
         mav_leg = axes[3].legend(["MACD", "MACD Signal"], loc=9, ncol=3, 
                                 prop={'size': 7}, fancybox=True, borderaxespad=0.)
@@ -457,7 +457,7 @@ async def plot_return_rate_anlys_async(collection, date_begin, ref=None, excess_
 
     collection_rr_df = reduce(lambda x, y: pd.merge(x, y, how='outer', on='date', sort=True), collection_rr) # merge into single dataframe
     collection_rr_df = collection_rr_df.fillna(method='ffill').fillna(0.0) # second fillna for return rates before created
-    print(collection_rr_df)
+    # print(collection_rr_df)
 
     # create a 'base layer' placeholder for plot
     place_holder = np.empty(collection_rr_df.shape[0])
