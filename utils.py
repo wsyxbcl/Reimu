@@ -28,9 +28,9 @@ headers = {'user-agent': "Mozilla/5.0 (X11; Linux x86_64; rv:92.0) Gecko/2010010
 
 # FILTERS
 # "TypeUS" seems to be a strong parameter, but with uncertainty 
-stock_market =  {'0': "SZ", '1': "SH", 
+stock_market =  {'0': "SZ", '1': "SH", '2': "BJ",
                  '105': "NASDAQ", '106': "NYSE", '107': "AMEX", '156': "US", '100': "US", '116': "HK"} # MktNum: MarketName
-stock_type = {'1': "沪A", '25': "科创板", '2': "深A", '8': "基金", '5': "指数", 
+stock_type = {'1': "沪A", '25': "科创板", '2': "深A", '27': "京A", '8': "基金", '5': "指数", 
               '19': "港股", '6': "港股"} # SecurityType: SecurityTypeName
 
 market_group = {'A': ['0', '1'], 
@@ -48,7 +48,10 @@ class Stock:
     def __init__(self, code, name, market_id, type_id):
         self.code = code
         self.name = name
-        self.market_id = market_id
+        if type_id == '27':
+            self.market_id = '2'
+        else:
+            self.market_id = market_id
         self.type_id = type_id
 
     @property
@@ -68,8 +71,8 @@ class Stock:
         """
         retrieve company_info from eastmoney (currently only the url is returned)
         """
-        if (market := stock_market[self.market_id]) in ('SZ', 'SH'):
-            h5_fc = self.code+{'SH': '01', 'SZ': '02'}[market]
+        if (market := stock_market[self.market_id]) in ('SZ', 'SH', 'BJ'):
+            h5_fc = self.code+{'SH': '01', 'SZ': '02', 'BJ': '.BJ'}[market]
             return f"https://emh5.eastmoney.com/html/?fc={h5_fc}&color=w"
         elif market in ('AMEX', 'NYSE', 'NASDAQ', 'HK'):
             h5_fc = self.code+{'HK': '', 'AMEX': '.A', 'NYSE': '.N', 'NASDAQ': '.O'}[market]
@@ -79,7 +82,8 @@ class Stock:
             return ''
             
     def collect_data_daily(self, time_begin='19900101', time_end='20991231'):
-        stock_url = eastmoney_base.format(market=self.market_id, 
+        market_id = self.market_id if self.market != 'BJ' else '0'
+        stock_url = eastmoney_base.format(market=market_id, 
                                           bench_code=self.code, 
                                           time_begin=time_begin, 
                                           time_end=time_end)
@@ -93,7 +97,8 @@ class Stock:
         return stock_data
 
     def collect_data_live(self):
-        stock_url = eastmoney_base_live.format(market=self.market_id, 
+        market_id = self.market_id if self.market != 'BJ' else '0'
+        stock_url = eastmoney_base_live.format(market=market_id, 
                                                bench_code=self.code)
         try:
             data_live = requests.get(stock_url, timeout=3, headers=headers).json()["data"]
@@ -158,7 +163,7 @@ class Stock_mix:
                 date_ref_index_utc = pd.Timestamp(date_ref).tz_localize('UTC')
             date_ref_index = (
                 date_ref_index_utc.tz_convert('Asia/Shanghai').date()
-                if stock_market[self.stock_list[0].market_id] == 'SZ' or 'SH' or 'HK'
+                if stock_market[self.stock_list[0].market_id] == 'SZ' or 'SH' or 'HK' or 'BJ'
                 else date_ref_index_utc.tz_convert('US/Eastern').date())
 
         get_value = lambda x: (x.index.values[0], x.values[0])
@@ -254,7 +259,8 @@ def stock_query(keyword, filter_md5=None, filter_code=None, echo=False):
     return stock_list
 
 async def data_collector_async(stock, client, time_begin='19900101', time_end='20991231'):
-    stock_url = eastmoney_base.format(market=stock.market_id, 
+    market_id = self.market_id if self.market != 'BJ' else '0'
+    stock_url = eastmoney_base.format(market=market_id, 
                                       bench_code=stock.code, 
                                       time_begin=time_begin, 
                                       time_end=time_end)
