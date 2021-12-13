@@ -259,7 +259,7 @@ def stock_query(keyword, filter_md5=None, filter_code=None, echo=False):
     return stock_list
 
 async def data_collector_async(stock, client, time_begin='19900101', time_end='20991231'):
-    market_id = self.market_id if self.market != 'BJ' else '0'
+    market_id = stock.market_id if stock.market != 'BJ' else '0'
     stock_url = eastmoney_base.format(market=market_id, 
                                       bench_code=stock.code, 
                                       time_begin=time_begin, 
