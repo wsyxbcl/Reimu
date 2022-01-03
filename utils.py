@@ -212,8 +212,11 @@ def stock_query(keyword, filter_md5=None, filter_code=None, echo=False):
     except (KeyError, ValueError):
         mkt_to_search = market_group['ALL']
     else:
-        keyword = keyword[:keyword.index('@')]
-        
+        try:
+            keyword = keyword[:keyword.index('@')]
+        except AttributeError:
+            pass
+            
     if (local_stock := (keyword+'.pickle')) in os.listdir(data_path):
         with open(os.path.join(data_path, local_stock), 'rb') as f:
             local_stock = pickle.load(f)
