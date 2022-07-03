@@ -307,6 +307,7 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
     elif time_ref == 'latest':
         date_ref_index = -1
     elif time_ref == 'created':
+        date_ref_index = -1 # inicial value incase of no matching
         date_created_stamp = pd.to_datetime(stock_mix.create_time.date())
         for i in range(10):
             # range(10) is to match the buffer time for non-trading days
