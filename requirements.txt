@@ -12,7 +12,7 @@ cycler
 frozenlist
 idna
 kiwisolver
-matplotlib==3.4.3
+matplotlib
 mplfinance
 multidict
 numpy
