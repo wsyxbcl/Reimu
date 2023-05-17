@@ -368,9 +368,12 @@ def plot_kline(stock_data, title='', plot_type='candle', volume=True, macd=False
                          scale_padding={'left': 0.4, 'top': 1, 'right': 1, 'bottom': 1}, 
                          returnfig=True)
     if ma_value:
-        mav_leg = axes[0].legend(['ma_{}'.format(i) for i in ma_value], loc=9, ncol=3, 
-                                prop={'size': 7}, fancybox=True, borderaxespad=0.)
-        mav_leg.get_frame().set_alpha(0.4)
+        # mav_leg = axes[0].legend(['ma_{}'.format(i) for i in ma_value], loc=9, ncol=3, 
+                                # prop={'size': 7}, fancybox=True, borderaxespad=0.)
+        # mav_leg.get_frame().set_alpha(0.4)
+        axes[0].legend([None]*(len(ma_value)+2))
+        handles = axes[0].get_legend().legendHandles
+        axes[0].legend(handles=handles[2:],labels=['ma_{}'.format(i) for i in ma_value])
     if macd:
         mav_leg = axes[3].legend(["MACD", "MACD Signal"], loc=9, ncol=3, 
                                 prop={'size': 7}, fancybox=True, borderaxespad=0.)
@@ -485,8 +488,13 @@ async def plot_return_rate_anlys_async(collection, date_begin, ref=None, excess_
                          ylabel='Return rate', 
                          addplot=apdict)
     axes[0].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1.0))
-    legend = axes[0].legend([identifier for identifier in collection], prop={'size': 7}, fancybox=True, borderaxespad=0.)
-    legend.get_frame().set_alpha(0.4)
+
+    axes[0].legend([None]*(len(collection_rr_df.columns)+2))
+    handles = axes[0].get_legend().legendHandles
+    axes[0].legend(handles=handles[2:], labels=[identifier for identifier in collection])
+
+    # legend = axes[0].legend([identifier for identifier in collection], prop={'size': 7}, fancybox=True, borderaxespad=0.)
+
     fig.savefig(output, dpi=300)
     plt.close(fig)
 
