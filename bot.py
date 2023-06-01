@@ -321,5 +321,4 @@ async def compare(message):
 #     await message.answer(str(message.photo[0].file_id))
 
 if __name__ == '__main__':
-    matplotlib.rcParams['font.family'] = ['Source Han Sans']
     executor.start_polling(dp, skip_updates=True)

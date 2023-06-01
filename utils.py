@@ -18,7 +18,8 @@ import requests
 from style import mc
 
 # VARIABLES
-matplotlib.rcParams['font.family'] = ['Source Han Sans']
+matplotlib.rcParams['font.family'] = ['FZNewShuSong-Z10']
+matplotlib.rcParams['axes.unicode_minus'] = False
 data_path = './data'
 _test_path = './demo'
 # fqt=1: split-adjusted price
@@ -131,7 +132,6 @@ class Stock_mix:
         labels = [stock.name for stock in self.stock_list]
         ratios = [ratio for ratio in self.holding_ratio]
         colors = plt.cm.get_cmap('tab20c').colors
-        matplotlib.rcParams['font.family'] = ['Source Han Sans']
         fig1, ax1 = plt.subplots()
         ax1.pie(ratios, colors=colors, labels=labels, autopct='%1.1f%%', startangle=90) #draw circle
         centre_circle = plt.Circle((0, 0), 0.70, fc='white')
@@ -411,8 +411,6 @@ def plot_stock_profit(stock_mix, stock_profit_ratio, title='', output=os.path.jo
     stock_df.sort_values('profit', inplace=True)
     stock_df.reset_index(inplace=True)
 
-    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
-    matplotlib.rcParams['font.family'] = ['Source Han Sans']
     plt.figure()
     plt.hlines(y=stock_df.index, xmin=0, xmax=stock_df.profit, color=stock_df.colors, alpha=0.4, linewidth=5)
 
@@ -480,7 +478,7 @@ async def plot_return_rate_anlys_async(collection, date_begin, ref=None, excess_
     apdict = [mpf.make_addplot(collection_rr_df[identifier]) for identifier in collection]
 
     kwargs = dict(type='candle', figratio=(11, 8), figscale=0.85)
-    style = mpf.make_mpf_style(base_mpf_style='yahoo', rc={'font.size':8, 'font.family': 'Source Han Sans'}, marketcolors=mc)
+    style = mpf.make_mpf_style(base_mpf_style='yahoo', rc={'font.size':8, 'font.family': 'FZNewShuSong-Z10'}, marketcolors=mc)
     fig, axes = mpf.plot(collection_rr_df, **kwargs, 
                          style=style, 
                          scale_padding={'left': 0.4, 'top': 1, 'right': 1, 'bottom': 1}, 
@@ -543,14 +541,6 @@ async def main():
     enl_stock_mix = stock_query('enl001')[0]
     # enl_stock_mix.draw()
     mix_data_async, matrix_close_price_async = await mix_data_collector_async(enl_stock_mix)
-    # datetime_yesterday = datetime.datetime.utcnow() - datetime.timedelta(days=1)
-    # profit_ratio, stock_profit_ratio = enl_stock_mix.get_profit_ratio(mix_data, matrix_close_price, date_ref=datetime_yesterday)
-    # print(profit_ratio)
-    # print(stock_profit_ratio)
-    # plot_kline(mix_data, title=enl_stock_mix.name, plot_type='line', volume=False)
-    # matplotlib.rcParams['font.family'] = ['Source Han Sans']
-    # plot_profitline(mix_data, profit_ratio)
-    # plot_stock_profit(enl_stock_mix, stock_profit_ratio)
     return mix_data_async, matrix_close_price_async 
 
 
