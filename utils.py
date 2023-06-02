@@ -129,6 +129,8 @@ class Stock_mix:
         self.create_time = create_time 
 
     def draw(self, output=os.path.join(_test_path, 'stock_mix.jpg')):
+        matplotlib.rcParams['font.family'] = ['FZNewShuSong-Z10']
+        matplotlib.rcParams['axes.unicode_minus'] = False
         labels = [stock.name for stock in self.stock_list]
         ratios = [ratio for ratio in self.holding_ratio]
         colors = plt.cm.get_cmap('tab20c').colors
@@ -307,7 +309,6 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
     elif time_ref == 'latest':
         date_ref_index = -1
     elif time_ref == 'created':
-        date_ref_index = -1 # inicial value incase of no matching
         date_created_stamp = pd.to_datetime(stock_mix.create_time.date())
         for i in range(10):
             # range(10) is to match the buffer time for non-trading days
@@ -322,6 +323,9 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
         raise ValueError
     close_price_ref = matrix_close_price[:, date_ref_index]
     stock_share_ratios = stock_mix.holding_ratio / close_price_ref
+    print(time_ref)
+    print(close_price_ref)
+    print(stock_share_ratios)
     value_mix = np.average(matrix_close_price, axis=0, weights=stock_share_ratios) 
     value_mix = value_mix / value_mix[date_ref_index] # norm to 1
     mix_data = pd.DataFrame(dates_array, columns=['date'])
@@ -404,6 +408,8 @@ def plot_profitline(stock_data, profit_ratio, title='', output=os.path.join(_tes
     plt.close(fig)
    
 def plot_stock_profit(stock_mix, stock_profit_ratio, title='', output=os.path.join(_test_path, 'profitstocks.jpg')):
+    matplotlib.rcParams['font.family'] = ['FZNewShuSong-Z10']
+    matplotlib.rcParams['axes.unicode_minus'] = False
     stock_df = pd.DataFrame()
     stock_df['name'] = [stock.name for stock in stock_mix.stock_list]
     stock_df['profit'] = stock_profit_ratio
@@ -449,7 +455,7 @@ async def plot_return_rate_anlys_async(collection, date_begin, ref=None, excess_
             collection_rr.append(stock_kline[identifier])
     elif collection_type is Stock_mix:
         # collection_data: (mix_data, mix_close_price)
-        collection_data = await asyncio.gather(*[mix_data_collector_async(stock_mix, time_begin=(stock_mix.create_time - datetime.timedelta(days=9)).strftime("%Y%m%d")) for stock_mix in collection])
+        collection_data = await asyncio.gather(*[mix_data_collector_async(stock_mix, time_begin=(stock_mix.create_time - datetime.timedelta(days=9)).strftime("%Y%m%d"), time_ref='created') for stock_mix in collection])
         for i, collection_data in enumerate(collection_data):
             stock_mix = collection[i]
             # price reference is already handled in Stock_mix.get_profit
