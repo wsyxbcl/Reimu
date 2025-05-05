@@ -9,10 +9,11 @@ import sys
 import toml
 import time
 
-from aiogram import Bot, Dispatcher, executor, types
-from aiogram.types import InlineQuery, ParseMode, message, \
+from aiogram import Bot, Dispatcher, types
+from aiogram.types import InlineQuery, ParseMode, Message, \
     InputTextMessageContent, InlineQueryResultPhoto
 import matplotlib.font_manager
+import asyncio
 
 from utils import *
 from commands import argparse_kline, argparse_define, argparse_xqimport, argparse_status, argparse_now, argparse_compare
@@ -31,27 +32,40 @@ logging.basicConfig(filename="./hakurei_bot.log",
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
-# Initialize bot and dispatcher
-try:
-    bot = Bot(token=config["telegram"]["token"], proxy=config["telegram"]["proxy"])
-except KeyError:
-    bot = Bot(token=config["telegram"]["token"])
-dp = Dispatcher(bot)
+async def main():
+    # Initialize bot and dispatcher
+    try:
+        bot = Bot(token=config["telegram"]["token"], proxy=config["telegram"]["proxy"])
+    except KeyError:
+        bot = Bot(token=config["telegram"]["token"])
+    dp = Dispatcher()
+    
+    # Register all handlers
+    dp.message.register(send_welcome, commands=['start'])
+    dp.message.register(send_help, commands=['help'])
+    dp.message.register(kline, commands=['kline'])
+    dp.message.register(define, commands=['define'])
+    dp.message.register(xqimport, commands=['xqimport'])
+    dp.message.register(status, commands=['status'])
+    dp.message.register(now, commands=['now'])
+    dp.message.register(compare, commands=['compare'])
+    
+    dp.callback_query.register(inline_kline_answer_callback_handler, lambda cb: '/kline' in cb.data or cb.data == 'exit')
+    dp.callback_query.register(inline_now_answer_callback_handler, lambda cb: '/now' in cb.data or cb.data == 'exit')
+    
+    # Start the bot
+    await dp.start_polling(bot)
 
-
-@dp.message_handler(commands=['start'])
-async def send_welcome(message):
+async def send_welcome(message: types.Message):
     await message.reply("Busy in stock trading, no time for talks.\n"
                         "/help if you need, contribute or build your own from https://github.com/wsyxbcl/Reimu") 
 
-@dp.message_handler(commands=['help'])
-async def send_help(message):
+async def send_help(message: types.Message):
     await message.reply("Current functions are: \n"
                         "/kline, /status, /now /define and /compare, "
                         "parameters are retrieved using argparse, add -h accordingly for detail.")
 
-@dp.message_handler(commands=['kline'])
-async def kline(message, query=None):
+async def kline(message: types.Message, query=None):
     logging.info(f'{message.text}')
     args = argparse_kline(message.text)
     if args.help:
@@ -111,17 +125,14 @@ async def kline(message, query=None):
         keyboard_markup.row(types.InlineKeyboardButton('exit', callback_data='exit'))
         await message.reply_photo(_file_id_inline, caption="Found multiple results", reply_markup=keyboard_markup)
 
-@dp.callback_query_handler(lambda cb: '/kline' in cb.data)
-@dp.callback_query_handler(text='exit') #TODO need expection on multi-user behavior?
-async def inline_kline_answer_callback_handler(query):
+async def inline_kline_answer_callback_handler(query: types.CallbackQuery):
     logging.info(f'{query.inline_message_id}: {query.data}')
     if query.data == 'exit':
         await query.message.delete()
         return 1
-    await kline(message.Message(text=query.data), query=query)
+    await kline(Message(text=query.data), query=query)
 
-@dp.message_handler(commands=['define'])
-async def define(message):
+async def define(message: types.Message):
     try:
         args = argparse_define(message.text)
     except argparse.ArgumentError:
@@ -150,8 +161,7 @@ async def define(message):
     buf.seek(0)
     await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+" created")
 
-@dp.message_handler(commands=['xqimport'])
-async def xqimport(message):
+async def xqimport(message: types.Message):
     try:
         args = argparse_xqimport(message.text)
     except argparse.ArgumentError:
@@ -178,8 +188,7 @@ async def xqimport(message):
     buf.seek(0)
     await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+" created")
 
-@dp.message_handler(commands=['status'])
-async def status(message):
+async def status(message: types.Message):
     """
     plot the return rate of given stock mix
     """
@@ -228,8 +237,7 @@ async def status(message):
     else:
         pass
 
-@dp.message_handler(commands=['now'])
-async def now(message, query=None):
+async def now(message: types.Message, query=None):
     logging.info(f'{message.text}')
     try:
         args = argparse_now(message.text)
@@ -288,17 +296,14 @@ async def now(message, query=None):
         keyboard_markup.row(types.InlineKeyboardButton('exit', callback_data='exit'))
         await message.reply_photo(_file_id_inline, caption="Find multiple results", reply_markup=keyboard_markup)
 
-@dp.callback_query_handler(lambda cb: '/now' in cb.data)
-@dp.callback_query_handler(text='exit')
-async def inline_now_answer_callback_handler(query):
+async def inline_now_answer_callback_handler(query: types.CallbackQuery):
     logging.info(f'{query.inline_message_id}: {query.data}')
     if query.data == 'exit':
         await query.message.delete()
         return 1
-    await now(message.Message(text=query.data), query=query)
+    await now(Message(text=query.data), query=query)
 
-@dp.message_handler(commands=['compare'])
-async def compare(message):
+async def compare(message: types.Message):
     try:
         args = argparse_compare(message.text)
     except argparse.ArgumentError:
@@ -321,4 +326,4 @@ async def compare(message):
 #     await message.answer(str(message.photo[0].file_id))
 
 if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
+    asyncio.run(main())
