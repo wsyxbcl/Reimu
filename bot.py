@@ -113,7 +113,7 @@ async def kline(message: types.Message, query=None):
             plot_kline(stock_data=stock.collect_data_daily(time_begin, time_end), 
                        title=f'kline of {stock.code}', plot_type='hollow_candle', macd=macd, output=buf)
         buf.seek(0)
-        kline_caption = (' '.join([stock.code, stock.name, stock_info])).replace('*', '\*') # A-share sucks!
+        kline_caption = (' '.join([stock.code, stock.name, stock_info])).replace('*', '\\*') # A-share sucks!
         if args.md5:
             # Not open to user input, can only result from inline keyboard callback
             await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=kline_caption, parse_mode=ParseMode.MARKDOWN))
@@ -159,7 +159,7 @@ async def define(message: types.Message):
     logging.info(f'creating stock mix:{stock_mix}')
     if type(stock_mix) is dict:
         candidate_list = stock_mix
-        await message.reply("Try using code to specify the following stocks:\n"+str(candidate_list).replace('*', '\*'), parse_mode=ParseMode.MARKDOWN)
+        await message.reply("Try using code to specify the following stocks:\n"+str(candidate_list).replace('*', '\\*'), parse_mode=ParseMode.MARKDOWN)
         return 2
     buf = io.BytesIO()
     stock_mix.draw(output=buf)
@@ -284,7 +284,7 @@ async def now(message: types.Message, query=None):
             plot_kline(stock_data=stock_data, live=True, preclose=stock_preclose,
                        title=f'Live price of {stock.code} (UTC+8)', plot_type='line', volume=True, macd=False, output=buf)
             buf.seek(0)
-            now_caption = (' '.join([stock.code, stock.name, stock_pct, stock_info])).replace('*', '\*') # A-share sucks!
+            now_caption = (' '.join([stock.code, stock.name, stock_pct, stock_info])).replace('*', '\\*') # A-share sucks!
             if args.md5:
                 # Not open to user input, can only result from inline keyboard callback
                 await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=now_caption, parse_mode=ParseMode.MARKDOWN))
