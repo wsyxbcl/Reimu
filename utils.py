@@ -2,9 +2,11 @@ import aiohttp
 import asyncio
 import datetime
 from functools import reduce
+import json
 import hashlib
 import os
 import pickle
+import random
 import re
 import time
 
@@ -271,6 +273,7 @@ async def data_collector_async(stock, client, time_begin='19900101', time_end='2
                                       time_end=time_end)
     try:
         response = await client.request(method='GET', url=stock_url)
+        # print(response)
         response_json = await response.json()
         stock_data = pd.DataFrame(map(lambda x: x.split(','), response_json["data"]["klines"]))
     except TypeError as e:
@@ -323,9 +326,9 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
         raise ValueError
     close_price_ref = matrix_close_price[:, date_ref_index]
     stock_share_ratios = stock_mix.holding_ratio / close_price_ref
-    print(time_ref)
-    print(close_price_ref)
-    print(stock_share_ratios)
+    # print(time_ref)
+    # print(close_price_ref)
+    # print(stock_share_ratios)
     value_mix = np.average(matrix_close_price, axis=0, weights=stock_share_ratios) 
     value_mix = value_mix / value_mix[date_ref_index] # norm to 1
     mix_data = pd.DataFrame(dates_array, columns=['date'])
