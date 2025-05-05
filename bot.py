@@ -14,6 +14,8 @@ from aiogram.types import InlineQuery, Message, \
     InputTextMessageContent, InlineQueryResultPhoto
 from aiogram.enums import ParseMode
 from aiogram.filters import Command, CommandObject
+from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.client.session.aiohttp import AiohttpSession
 import matplotlib.font_manager
 import asyncio
 
@@ -35,12 +37,30 @@ logging.basicConfig(filename="./hakurei_bot.log",
                     level=logging.INFO)
 
 async def main():
-    # Initialize bot and dispatcher
+    # Initialize session with connection pooling
+    session = AiohttpSession(
+        connector=None,  # Will create default TCPConnector with keep_alive_timeout=75
+        json_loads=None,  # Will use standard json.loads
+        proxy=config["telegram"].get("proxy"),  # Use proxy if configured
+        timeout=30  # Timeout for API requests
+    )
+
+    # Initialize bot with optimized settings
     try:
-        bot = Bot(token=config["telegram"]["token"], proxy=config["telegram"]["proxy"])
+        bot = Bot(
+            token=config["telegram"]["token"],
+            session=session,
+            parse_mode=ParseMode.MARKDOWN  # Set default parse mode
+        )
     except KeyError:
-        bot = Bot(token=config["telegram"]["token"])
-    dp = Dispatcher()
+        bot = Bot(
+            token=config["telegram"]["token"],
+            session=session,
+            parse_mode=ParseMode.MARKDOWN
+        )
+
+    # Initialize dispatcher with memory storage
+    dp = Dispatcher(storage=MemoryStorage())
     
     # Register all handlers
     dp.message.register(send_welcome, Command(commands=['start']))
@@ -58,8 +78,19 @@ async def main():
     dp.callback_query.register(inline_now_answer_callback_handler, 
         lambda c: '/now' in c.data or c.data == 'exit')
     
-    # Start the bot
-    await dp.start_polling(bot)
+    try:
+        # Start the bot with graceful shutdown
+        await dp.start_polling(
+            bot,
+            allowed_updates=[
+                "message",
+                "callback_query",
+                "inline_query"
+            ],  # Specify allowed updates for better performance
+            close_bot_session=True  # Ensure session is closed properly
+        )
+    finally:
+        await bot.session.close()  # Ensure session resources are cleaned up
 
 async def send_welcome(message: types.Message):
     await message.reply("Busy in stock trading, no time for talks.\n"
@@ -116,9 +147,9 @@ async def kline(message: types.Message, query=None):
         kline_caption = (' '.join([stock.code, stock.name, stock_info])).replace('*', '\\*') # A-share sucks!
         if args.md5:
             # Not open to user input, can only result from inline keyboard callback
-            await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=kline_caption, parse_mode=ParseMode.MARKDOWN))
+            await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=kline_caption))
         else:
-            await message.reply_photo(buf, caption=kline_caption, parse_mode=ParseMode.MARKDOWN)
+            await message.reply_photo(buf, caption=kline_caption)
     else:
         # get user's selection from inline keyboard
         keyboard_markup = types.InlineKeyboardMarkup()
@@ -159,7 +190,7 @@ async def define(message: types.Message):
     logging.info(f'creating stock mix:{stock_mix}')
     if type(stock_mix) is dict:
         candidate_list = stock_mix
-        await message.reply("Try using code to specify the following stocks:\n"+str(candidate_list).replace('*', '\\*'), parse_mode=ParseMode.MARKDOWN)
+        await message.reply("Try using code to specify the following stocks:\n"+str(candidate_list).replace('*', '\\*'))
         return 2
     buf = io.BytesIO()
     stock_mix.draw(output=buf)
@@ -287,9 +318,9 @@ async def now(message: types.Message, query=None):
             now_caption = (' '.join([stock.code, stock.name, stock_pct, stock_info])).replace('*', '\\*') # A-share sucks!
             if args.md5:
                 # Not open to user input, can only result from inline keyboard callback
-                await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=now_caption, parse_mode=ParseMode.MARKDOWN))
+                await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=now_caption))
             else:
-                await message.reply_photo(buf, caption=now_caption, parse_mode=ParseMode.MARKDOWN)
+                await message.reply_photo(buf, caption=now_caption)
     else:
         # get user's selection from inline keyboard
         keyboard_markup = types.InlineKeyboardMarkup()
