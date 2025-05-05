@@ -9,9 +9,11 @@ import sys
 import toml
 import time
 
-from aiogram import Bot, Dispatcher, types
-from aiogram.types import InlineQuery, ParseMode, Message, \
+from aiogram import Bot, Dispatcher, types, F
+from aiogram.types import InlineQuery, Message, \
     InputTextMessageContent, InlineQueryResultPhoto
+from aiogram.enums import ParseMode
+from aiogram.filters import Command, CommandObject
 import matplotlib.font_manager
 import asyncio
 
@@ -41,17 +43,20 @@ async def main():
     dp = Dispatcher()
     
     # Register all handlers
-    dp.message.register(send_welcome, commands=['start'])
-    dp.message.register(send_help, commands=['help'])
-    dp.message.register(kline, commands=['kline'])
-    dp.message.register(define, commands=['define'])
-    dp.message.register(xqimport, commands=['xqimport'])
-    dp.message.register(status, commands=['status'])
-    dp.message.register(now, commands=['now'])
-    dp.message.register(compare, commands=['compare'])
+    dp.message.register(send_welcome, Command(commands=['start']))
+    dp.message.register(send_help, Command(commands=['help']))
+    dp.message.register(kline, Command(commands=['kline']))
+    dp.message.register(define, Command(commands=['define']))
+    dp.message.register(xqimport, Command(commands=['xqimport']))
+    dp.message.register(status, Command(commands=['status']))
+    dp.message.register(now, Command(commands=['now']))
+    dp.message.register(compare, Command(commands=['compare']))
     
-    dp.callback_query.register(inline_kline_answer_callback_handler, lambda cb: '/kline' in cb.data or cb.data == 'exit')
-    dp.callback_query.register(inline_now_answer_callback_handler, lambda cb: '/now' in cb.data or cb.data == 'exit')
+    # Register callback query handlers
+    dp.callback_query.register(inline_kline_answer_callback_handler, 
+        lambda c: '/kline' in c.data or c.data == 'exit')
+    dp.callback_query.register(inline_now_answer_callback_handler, 
+        lambda c: '/now' in c.data or c.data == 'exit')
     
     # Start the bot
     await dp.start_polling(bot)
