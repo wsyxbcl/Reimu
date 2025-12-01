@@ -88,17 +88,30 @@ async def kline(message: Message, command_text: str | None = None, query: Callba
             if args.days is None:
                 time_begin = time_mix_created
                 macd = False
-                stock_data, _ = await mix_data_collector_async(stock, time_begin=time_begin, time_end=time_end, 
+                try:
+                    stock_data, _ = await mix_data_collector_async(stock, time_begin=time_begin, time_end=time_end, 
                                                                time_ref='oldest')
+                except QueryError as e:
+                    await message.reply(f"Failed to collect data: {e}")
+                    return 1
             else:
-                stock_data, _ = await mix_data_collector_async(stock, time_begin=time_begin, time_end=time_end, 
+                try:
+                    stock_data, _ = await mix_data_collector_async(stock, time_begin=time_begin, time_end=time_end, 
                                                                time_ref='created')
+                except QueryError as e:
+                    await message.reply(f"Failed to collect data: {e}")
+                    return 1
             plot_kline(stock_data=stock_data, title=f'kline of {stock.code}',
                        plot_type='line', volume=False, macd=macd, output=buf)
         else:
             if stock_info := stock.company_info:
                 stock_info = f"[INFO]({stock_info})"
-            plot_kline(stock_data=stock.collect_data_daily(time_begin, time_end), 
+            try:
+                stock_data = stock.collect_data_daily(time_begin, time_end)
+            except QueryError as e:
+                await message.reply(f"Failed to collect data: {e}")
+                return 1
+            plot_kline(stock_data=stock_data, 
                        title=f'kline of {stock.code}', plot_type='hollow_candle', macd=macd, output=buf)
         buf.seek(0)
         kline_caption = (' '.join([stock.code, stock.name, stock_info])).replace('*', r'\*') # A-share sucks!
