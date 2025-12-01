@@ -4,6 +4,7 @@ import datetime
 from functools import reduce
 import json
 import hashlib
+import logging
 import os
 import pickle
 import random
@@ -294,7 +295,7 @@ async def data_collector_async(stock, client, time_begin='19900101', time_end='2
                                       time_end=time_end)
     try:
         last_err = None
-        for attempt in range(3):
+        for attempt in range(5):
             try:
                 response = await client.request(method='GET', url=stock_url, timeout=10)
                 response.raise_for_status()
@@ -303,9 +304,10 @@ async def data_collector_async(stock, client, time_begin='19900101', time_end='2
                 break
             except aiohttp.ClientError as e:
                 last_err = e
-                if attempt == 2:
+                if attempt == 4:
+                    logging.warning("Give up fetching %s after retries: %s", stock.code, last_err)
                     raise
-                await asyncio.sleep(0.5 * (1 + 0.2 * random.random()))
+                await asyncio.sleep(0.6 * (1 + 0.3 * random.random()))
     except (TypeError, aiohttp.ClientError) as e:
         raise QueryError(f"Can't find kline data for {stock.code}") from e
     stock_data.columns = ["date", "open", "close", "high", "low", "volume", "money", "change"]
@@ -327,8 +329,14 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
             async with sem:
                 return await data_collector_async(stock, client, time_begin=time_begin, time_end=time_end)
 
-        # stock_data: list of pd.df
-        stock_data = await asyncio.gather(*[_fetch_one(stock) for stock in stock_mix.stock_list])
+        tasks = [_fetch_one(stock) for stock in stock_mix.stock_list]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    errors = [stock_mix.stock_list[i].code for i, res in enumerate(results) if isinstance(res, Exception)]
+    if errors:
+        raise QueryError(f"Can't find kline data for tickers: {', '.join(errors)}")
+
+    stock_data = results  # all succeeded
     # Assuming that dates are inconsistent, trading suspention handled
     # a more robust solution
     collection_close_price = []
