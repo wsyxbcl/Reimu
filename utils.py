@@ -100,7 +100,7 @@ class Stock:
             resp = _with_retries(_fetch)
             stock_data = pd.DataFrame(map(lambda x: x.split(','), resp.json()["data"]["klines"]))
         except (TypeError, requests.RequestException) as e:
-            raise QueryError("Can't find kline data") from e
+            raise QueryError(f"Can't find kline data for {self.code}") from e
         stock_data.columns = ["date", "open", "close", "high", "low", "volume", "money", "change"]
         stock_data["date"] = pd.to_datetime(stock_data["date"])
         return stock_data
@@ -296,7 +296,7 @@ async def data_collector_async(stock, client, time_begin='19900101', time_end='2
         last_err = None
         for attempt in range(3):
             try:
-                response = await client.request(method='GET', url=stock_url)
+                response = await client.request(method='GET', url=stock_url, timeout=10)
                 response.raise_for_status()
                 response_json = await response.json()
                 stock_data = pd.DataFrame(map(lambda x: x.split(','), response_json["data"]["klines"]))
@@ -307,7 +307,7 @@ async def data_collector_async(stock, client, time_begin='19900101', time_end='2
                     raise
                 await asyncio.sleep(0.5 * (1 + 0.2 * random.random()))
     except (TypeError, aiohttp.ClientError) as e:
-        raise QueryError("Can't find kline data") from e
+        raise QueryError(f"Can't find kline data for {stock.code}") from e
     stock_data.columns = ["date", "open", "close", "high", "low", "volume", "money", "change"]
     stock_data["date"] = pd.to_datetime(stock_data["date"])
     return stock_data
@@ -319,7 +319,8 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
     """
     # using the same client instead of creating everytime may improve the performance
     connector = aiohttp.TCPConnector(limit=_fetch_concurrency)
-    async with aiohttp.ClientSession(connector=connector) as client:
+    timeout = aiohttp.ClientTimeout(total=30)
+    async with aiohttp.ClientSession(connector=connector, timeout=timeout) as client:
         sem = asyncio.Semaphore(_fetch_concurrency)
 
         async def _fetch_one(stock):
