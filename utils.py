@@ -91,9 +91,10 @@ class Stock:
                                           time_begin=time_begin, 
                                           time_end=time_end)
         try:
-            stock_data = pd.DataFrame(map(lambda x: x.split(','), 
-                                      requests.get(stock_url, timeout=10, headers=headers).json()["data"]["klines"]))
-        except TypeError as e:
+            resp = requests.get(stock_url, timeout=10, headers=headers)
+            resp.raise_for_status()
+            stock_data = pd.DataFrame(map(lambda x: x.split(','), resp.json()["data"]["klines"]))
+        except (TypeError, requests.RequestException) as e:
             raise QueryError("Can't find kline data") from e
         stock_data.columns = ["date", "open", "close", "high", "low", "volume", "money", "change"]
         stock_data["date"] = pd.to_datetime(stock_data["date"])
