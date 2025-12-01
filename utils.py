@@ -273,10 +273,10 @@ async def data_collector_async(stock, client, time_begin='19900101', time_end='2
                                       time_end=time_end)
     try:
         response = await client.request(method='GET', url=stock_url)
-        # print(response)
+        response.raise_for_status()
         response_json = await response.json()
         stock_data = pd.DataFrame(map(lambda x: x.split(','), response_json["data"]["klines"]))
-    except TypeError as e:
+    except (TypeError, aiohttp.ClientError) as e:
         raise QueryError("Can't find kline data") from e
     stock_data.columns = ["date", "open", "close", "high", "low", "volume", "money", "change"]
     stock_data["date"] = pd.to_datetime(stock_data["date"])

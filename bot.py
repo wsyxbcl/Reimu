@@ -225,7 +225,11 @@ async def status(message: Message):
             time_now = datetime.datetime.utcnow().strftime("%Y%m%d %H:%M:%S")
             # stock_data, matrix_close_price = mix_data_collector(stock_mix, time_begin=time_begin)
 
-            stock_data, matrix_close_price = await mix_data_collector_async(stock_mix, time_begin=time_begin, time_ref='created')
+            try:
+                stock_data, matrix_close_price = await mix_data_collector_async(stock_mix, time_begin=time_begin, time_ref='created')
+            except QueryError as e:
+                await message.reply(f"Failed to collect data: {e}")
+                return 1
             profit_ratio, stock_profit_ratio = stock_mix.get_profit_ratio(stock_data, matrix_close_price, 
                                                                           date_ref=stock_mix.create_time)
             if args.detail:
