@@ -379,8 +379,9 @@ def plot_kline(stock_data, title='', plot_type='candle', volume=True, macd=False
                                 # prop={'size': 7}, fancybox=True, borderaxespad=0.)
         # mav_leg.get_frame().set_alpha(0.4)
         axes[0].legend([None]*(len(ma_value)+2))
-        handles = axes[0].get_legend().legendHandles
-        axes[0].legend(handles=handles[2:],labels=['ma_{}'.format(i) for i in ma_value])
+        handles, _ = axes[0].get_legend_handles_labels()
+        if len(handles) >= len(ma_value) + 2:
+            axes[0].legend(handles=handles[2:], labels=['ma_{}'.format(i) for i in ma_value])
     if macd:
         mav_leg = axes[3].legend(["MACD", "MACD Signal"], loc=9, ncol=3, 
                                 prop={'size': 7}, fancybox=True, borderaxespad=0.)
@@ -497,8 +498,9 @@ async def plot_return_rate_anlys_async(collection, date_begin, ref=None, excess_
     axes[0].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1.0))
 
     axes[0].legend([None]*(len(collection_rr_df.columns)+2))
-    handles = axes[0].get_legend().legendHandles
-    axes[0].legend(handles=handles[2:], labels=[identifier for identifier in collection])
+    handles, _ = axes[0].get_legend_handles_labels()
+    if len(handles) >= len(collection) + 2:
+        axes[0].legend(handles=handles[2:], labels=[identifier for identifier in collection])
 
     # legend = axes[0].legend([identifier for identifier in collection], prop={'size': 7}, fancybox=True, borderaxespad=0.)
 

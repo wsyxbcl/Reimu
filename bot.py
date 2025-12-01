@@ -9,9 +9,19 @@ import sys
 import toml
 import time
 
-from aiogram import Bot, Dispatcher, executor, types
-from aiogram.types import InlineQuery, ParseMode, message, \
-    InputTextMessageContent, InlineQueryResultPhoto
+from aiogram import Bot, Dispatcher, F, Router
+from aiogram.client.bot import DefaultBotProperties
+from aiogram.client.session.aiohttp import AiohttpSession
+from aiogram.enums import ParseMode
+from aiogram.filters import Command
+from aiogram.types import (
+    BufferedInputFile,
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    InputMediaPhoto,
+    Message,
+)
 import matplotlib.font_manager
 
 from utils import *
@@ -31,29 +41,26 @@ logging.basicConfig(filename="./hakurei_bot.log",
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
-# Initialize bot and dispatcher
-try:
-    bot = Bot(token=config["telegram"]["token"], proxy=config["telegram"]["proxy"])
-except KeyError:
-    bot = Bot(token=config["telegram"]["token"])
-dp = Dispatcher(bot)
+router = Router()
+dp = Dispatcher()
+dp.include_router(router)
 
 
-@dp.message_handler(commands=['start'])
-async def send_welcome(message):
+@router.message(Command("start"))
+async def send_welcome(message: Message):
     await message.reply("Busy in stock trading, no time for talks.\n"
                         "/help if you need, contribute or build your own from https://github.com/wsyxbcl/Reimu") 
 
-@dp.message_handler(commands=['help'])
-async def send_help(message):
+@router.message(Command("help"))
+async def send_help(message: Message):
     await message.reply("Current functions are: \n"
                         "/kline, /status, /now /define and /compare, "
                         "parameters are retrieved using argparse, add -h accordingly for detail.")
 
-@dp.message_handler(commands=['kline'])
-async def kline(message, query=None):
-    logging.info(f'{message.text}')
-    args = argparse_kline(message.text)
+async def kline(message: Message, command_text: str | None = None, query: CallbackQuery | None = None):
+    text = command_text or message.text
+    logging.info(f'{text}')
+    args = argparse_kline(text)
     if args.help:
         await message.reply(argparse_kline.__doc__)
         return 0
@@ -94,34 +101,41 @@ async def kline(message, query=None):
             plot_kline(stock_data=stock.collect_data_daily(time_begin, time_end), 
                        title=f'kline of {stock.code}', plot_type='hollow_candle', macd=macd, output=buf)
         buf.seek(0)
-        kline_caption = (' '.join([stock.code, stock.name, stock_info])).replace('*', '\*') # A-share sucks!
+        kline_caption = (' '.join([stock.code, stock.name, stock_info])).replace('*', r'\*') # A-share sucks!
+        photo = BufferedInputFile(buf.getvalue(), filename="kline.png")
         if args.md5:
             # Not open to user input, can only result from inline keyboard callback
-            await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=kline_caption, parse_mode=ParseMode.MARKDOWN))
+            await query.message.edit_media(InputMediaPhoto(media=photo, caption=kline_caption, parse_mode=ParseMode.MARKDOWN))
         else:
-            await message.reply_photo(buf, caption=kline_caption, parse_mode=ParseMode.MARKDOWN)
+            await message.reply_photo(photo, caption=kline_caption, parse_mode=ParseMode.MARKDOWN)
     else:
         # get user's selection from inline keyboard
-        keyboard_markup = types.InlineKeyboardMarkup()
+        keyboard_markup = InlineKeyboardMarkup()
         for stock in stock_list:
             stock_emoji = _market_emoji[stock.market]
-            keyboard_markup.row(types.InlineKeyboardButton(' '.join([stock_emoji, stock.code, stock.name]), 
+            keyboard_markup.row(InlineKeyboardButton(' '.join([stock_emoji, stock.code, stock.name]), 
                                 callback_data=' '.join(filter(None, ['/kline', time_arg, '-e', stock.md5, args.keyword[0]]))))
         # add exit button
-        keyboard_markup.row(types.InlineKeyboardButton('exit', callback_data='exit'))
+        keyboard_markup.row(InlineKeyboardButton('exit', callback_data='exit'))
         await message.reply_photo(_file_id_inline, caption="Found multiple results", reply_markup=keyboard_markup)
 
-@dp.callback_query_handler(lambda cb: '/kline' in cb.data)
-@dp.callback_query_handler(text='exit') #TODO need expection on multi-user behavior?
-async def inline_kline_answer_callback_handler(query):
-    logging.info(f'{query.inline_message_id}: {query.data}')
-    if query.data == 'exit':
-        await query.message.delete()
-        return 1
-    await kline(message.Message(text=query.data), query=query)
+@router.message(Command("kline"))
+async def kline_command(message: Message):
+    await kline(message)
 
-@dp.message_handler(commands=['define'])
-async def define(message):
+@router.callback_query(F.data.startswith('/kline'))
+async def inline_kline_answer_callback_handler(query: CallbackQuery):
+    logging.info(f'{query.inline_message_id}: {query.data}')
+    await kline(query.message, command_text=query.data, query=query)
+
+@router.callback_query(F.data == 'exit') #TODO need expection on multi-user behavior?
+async def exit_callback(query: CallbackQuery):
+    logging.info(f'{query.inline_message_id}: exit')
+    await query.message.delete()
+    return 1
+
+@router.message(Command("define"))
+async def define(message: Message):
     try:
         args = argparse_define(message.text)
     except argparse.ArgumentError:
@@ -143,15 +157,15 @@ async def define(message):
     logging.info(f'creating stock mix:{stock_mix}')
     if type(stock_mix) is dict:
         candidate_list = stock_mix
-        await message.reply("Try using code to specify the following stocks:\n"+str(candidate_list).replace('*', '\*'), parse_mode=ParseMode.MARKDOWN)
+        await message.reply("Try using code to specify the following stocks:\n"+str(candidate_list).replace('*', r'\*'), parse_mode=ParseMode.MARKDOWN)
         return 2
     buf = io.BytesIO()
     stock_mix.draw(output=buf)
     buf.seek(0)
-    await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+" created")
+    await message.reply_photo(BufferedInputFile(buf.getvalue(), filename="stock_mix.png"), caption=stock_mix.code+' '+stock_mix.name+" created")
 
-@dp.message_handler(commands=['xqimport'])
-async def xqimport(message):
+@router.message(Command("xqimport"))
+async def xqimport(message: Message):
     try:
         args = argparse_xqimport(message.text)
     except argparse.ArgumentError:
@@ -176,10 +190,10 @@ async def xqimport(message):
     buf = io.BytesIO()
     stock_mix.draw(output=buf)
     buf.seek(0)
-    await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+" created")
+    await message.reply_photo(BufferedInputFile(buf.getvalue(), filename="stock_mix.png"), caption=stock_mix.code+' '+stock_mix.name+" created")
 
-@dp.message_handler(commands=['status'])
-async def status(message):
+@router.message(Command("status"))
+async def status(message: Message):
     """
     plot the return rate of given stock mix
     """
@@ -203,7 +217,7 @@ async def status(message):
         if args.ls:
             stock_mix.draw(output=buf)
             buf.seek(0)
-            await message.reply_photo(buf, caption=str(stock_mix))
+            await message.reply_photo(BufferedInputFile(buf.getvalue(), filename="stock_mix.png"), caption=str(stock_mix))
         else:
             # add buffer time for non-trading days
             time_created = stock_mix.create_time.strftime("%Y%m%d")
@@ -223,16 +237,19 @@ async def status(message):
                                 title=f'Return rate of {stock_mix.code}, {time_created}-{time_now} (UTC)',
                                 output=buf)
             buf.seek(0)
-            await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+\
+            await message.reply_photo(
+                BufferedInputFile(buf.getvalue(), filename="status.png"),
+                caption=stock_mix.code+' '+stock_mix.name+\
                                                    "\nCurrent return rate: {:.2%}".format(profit_ratio[-1]))
     else:
         pass
 
-@dp.message_handler(commands=['now'])
-async def now(message, query=None):
-    logging.info(f'{message.text}')
+@router.message(Command("now"))
+async def now(message: Message, query: CallbackQuery | None = None, command_text: str | None = None):
+    text = command_text or message.text
+    logging.info(f'{text}')
     try:
-        args = argparse_now(message.text)
+        args = argparse_now(text)
     except argparse.ArgumentError:
         pass
     if args.help:
@@ -248,7 +265,7 @@ async def now(message, query=None):
         stock = stock_list[0]
         if type(stock_mix := stock_list[0]) is Stock_mix:
             try:
-                time_begin, _ = get_time_range(int(message.text.split()[2]))
+                time_begin, _ = get_time_range(int(text.split()[2]))
             except IndexError:
                 time_begin = stock_mix.create_time.strftime("%Y%m%d")
             datetime_ref = (datetime.datetime.utcnow() - datetime.timedelta(days=30)).strftime("%Y%m%d") # refer to last trading day
@@ -260,7 +277,8 @@ async def now(message, query=None):
                             title=f'{stock_mix.name} Latest return rate', #TODO add a timestamp
                             output=buf)
             buf.seek(0)
-            await message.reply_photo(buf, caption=stock_mix.code+' '+stock_mix.name+\
+            photo = BufferedInputFile(buf.getvalue(), filename="now.png")
+            await message.reply_photo(photo, caption=stock_mix.code+' '+stock_mix.name+\
                                                 "\nLatest return rate: {:.2%}".format(profit_ratio[-1]))
         else:
             if stock_info := stock.company_info:
@@ -271,34 +289,31 @@ async def now(message, query=None):
             plot_kline(stock_data=stock_data, live=True, preclose=stock_preclose,
                        title=f'Live price of {stock.code} (UTC+8)', plot_type='line', volume=True, macd=False, output=buf)
             buf.seek(0)
-            now_caption = (' '.join([stock.code, stock.name, stock_pct, stock_info])).replace('*', '\*') # A-share sucks!
+            now_caption = (' '.join([stock.code, stock.name, stock_pct, stock_info])).replace('*', r'\*') # A-share sucks!
+            photo = BufferedInputFile(buf.getvalue(), filename="now.png")
             if args.md5:
                 # Not open to user input, can only result from inline keyboard callback
-                await query.message.edit_media(types.InputMediaPhoto(media=buf, caption=now_caption, parse_mode=ParseMode.MARKDOWN))
+                await query.message.edit_media(InputMediaPhoto(media=photo, caption=now_caption, parse_mode=ParseMode.MARKDOWN))
             else:
-                await message.reply_photo(buf, caption=now_caption, parse_mode=ParseMode.MARKDOWN)
+                await message.reply_photo(photo, caption=now_caption, parse_mode=ParseMode.MARKDOWN)
     else:
         # get user's selection from inline keyboard
-        keyboard_markup = types.InlineKeyboardMarkup()
+        keyboard_markup = InlineKeyboardMarkup()
         for stock in stock_list:
             stock_emoji = _market_emoji[stock.market]
-            keyboard_markup.row(types.InlineKeyboardButton(' '.join([stock_emoji, stock.code, stock.name]), 
+            keyboard_markup.row(InlineKeyboardButton(' '.join([stock_emoji, stock.code, stock.name]), 
                                 callback_data=' '.join(filter(None, ['/now', '-e', stock.md5, args.keyword]))))
         # add exit button
-        keyboard_markup.row(types.InlineKeyboardButton('exit', callback_data='exit'))
+        keyboard_markup.row(InlineKeyboardButton('exit', callback_data='exit'))
         await message.reply_photo(_file_id_inline, caption="Find multiple results", reply_markup=keyboard_markup)
 
-@dp.callback_query_handler(lambda cb: '/now' in cb.data)
-@dp.callback_query_handler(text='exit')
-async def inline_now_answer_callback_handler(query):
+@router.callback_query(F.data.startswith('/now'))
+async def inline_now_answer_callback_handler(query: CallbackQuery):
     logging.info(f'{query.inline_message_id}: {query.data}')
-    if query.data == 'exit':
-        await query.message.delete()
-        return 1
-    await now(message.Message(text=query.data), query=query)
+    await now(query.message, query=query, command_text=query.data)
 
-@dp.message_handler(commands=['compare'])
-async def compare(message):
+@router.message(Command("compare"))
+async def compare(message: Message):
     try:
         args = argparse_compare(message.text)
     except argparse.ArgumentError:
@@ -313,12 +328,23 @@ async def compare(message):
     buf = io.BytesIO()
     await plot_return_rate_anlys_async(stock_list, date_begin=time_begin, output=buf)
     buf.seek(0)
-    await message.reply_photo(buf, caption='')
+    await message.reply_photo(BufferedInputFile(buf.getvalue(), filename="compare.png"), caption='')
     
 # To get photo file_id
-# @dp.message_handler(content_types=['photo'])
+# @router.message(F.content_type == types.ContentType.PHOTO)
 # async def echo(message):
 #     await message.answer(str(message.photo[0].file_id))
 
+
+async def main():
+    try:
+        session = AiohttpSession(proxy=config["telegram"]["proxy"])
+    except KeyError:
+        session = AiohttpSession()
+    bot = Bot(token=config["telegram"]["token"], session=session, default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN))
+    await dp.start_polling(bot, skip_updates=True)
+
+
 if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
+    import asyncio
+    asyncio.run(main())
