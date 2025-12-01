@@ -29,6 +29,7 @@ _test_path = './demo'
 eastmoney_base = "http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={market}.{bench_code}&fields1=f1%2Cf2%2Cf3%2Cf4%2Cf5&fields2=f51%2Cf52%2Cf53%2Cf54%2Cf55%2Cf56%2Cf57%2Cf58&klt=101&fqt=1&beg={time_begin}&end={time_end}"
 eastmoney_base_live = "http://push2.eastmoney.com/api/qt/stock/trends2/get?fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57,f58&ut=fa5fd1943c7b386f172d6893dbfba10b&iscr=0&ndays=1&secid={market}.{bench_code}"
 headers = {'user-agent': "Mozilla/5.0 (X11; Linux x86_64; rv:92.0) Gecko/20100101 Firefox/92.0"}
+_fetch_concurrency = 5
 
 # FILTERS
 # "TypeUS" seems to be a strong parameter, but with uncertainty 
@@ -317,9 +318,16 @@ async def mix_data_collector_async(stock_mix, time_begin='20210101', time_end='2
     Noted that long time range can cause date inconsistency
     """
     # using the same client instead of creating everytime may improve the performance
-    async with aiohttp.ClientSession() as client: 
+    connector = aiohttp.TCPConnector(limit=_fetch_concurrency)
+    async with aiohttp.ClientSession(connector=connector) as client:
+        sem = asyncio.Semaphore(_fetch_concurrency)
+
+        async def _fetch_one(stock):
+            async with sem:
+                return await data_collector_async(stock, client, time_begin=time_begin, time_end=time_end)
+
         # stock_data: list of pd.df
-        stock_data = await asyncio.gather(*[data_collector_async(stock, client, time_begin=time_begin, time_end=time_end) for stock in stock_mix.stock_list])
+        stock_data = await asyncio.gather(*[_fetch_one(stock) for stock in stock_mix.stock_list])
     # Assuming that dates are inconsistent, trading suspention handled
     # a more robust solution
     collection_close_price = []
