@@ -126,7 +126,7 @@ async def kline(message: Message, command_text: str | None = None, query: Callba
         keyboard_markup = InlineKeyboardMarkup(inline_keyboard=[])
         for stock in stock_list:
             stock_emoji = _market_emoji[stock.market]
-            keyboard_markup.inline_keyboard.append([InlineKeyboardButton(' '.join([stock_emoji, stock.code, stock.name]), 
+            keyboard_markup.inline_keyboard.append([InlineKeyboardButton(text=' '.join([stock_emoji, stock.code, stock.name]), 
                                 callback_data=' '.join(filter(None, ['/kline', time_arg, '-e', stock.md5, args.keyword[0]])))])
         # add exit button
         keyboard_markup.inline_keyboard.append([InlineKeyboardButton('exit', callback_data='exit')])
@@ -318,7 +318,7 @@ async def now(message: Message, query: CallbackQuery | None = None, command_text
         keyboard_markup = InlineKeyboardMarkup(inline_keyboard=[])
         for stock in stock_list:
             stock_emoji = _market_emoji[stock.market]
-            keyboard_markup.inline_keyboard.append([InlineKeyboardButton(' '.join([stock_emoji, stock.code, stock.name]), 
+            keyboard_markup.inline_keyboard.append([InlineKeyboardButton(text=' '.join([stock_emoji, stock.code, stock.name]), 
                                 callback_data=' '.join(filter(None, ['/now', '-e', stock.md5, args.keyword])))])
         # add exit button
         keyboard_markup.inline_keyboard.append([InlineKeyboardButton('exit', callback_data='exit')])
