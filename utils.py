@@ -9,6 +9,7 @@ import pickle
 import random
 import re
 import time
+from typing import Callable, TypeVar
 
 import mplfinance as mpf
 import matplotlib
@@ -91,8 +92,11 @@ class Stock:
                                           time_begin=time_begin, 
                                           time_end=time_end)
         try:
-            resp = requests.get(stock_url, timeout=10, headers=headers)
-            resp.raise_for_status()
+            def _fetch():
+                resp = requests.get(stock_url, timeout=10, headers=headers)
+                resp.raise_for_status()
+                return resp
+            resp = _with_retries(_fetch)
             stock_data = pd.DataFrame(map(lambda x: x.split(','), resp.json()["data"]["klines"]))
         except (TypeError, requests.RequestException) as e:
             raise QueryError("Can't find kline data") from e
@@ -266,6 +270,21 @@ def stock_query(keyword, filter_md5=None, filter_code=None, echo=False):
         raise QueryError(f"Empty stock_list from \n{query_result}")
     return stock_list
 
+
+T = TypeVar("T")
+
+def _with_retries(fn: Callable[[], T], retries: int = 2, delay: float = 0.5) -> T:
+    """
+    Simple retry helper for transient network hiccups.
+    """
+    for attempt in range(retries + 1):
+        try:
+            return fn()
+        except (requests.RequestException, aiohttp.ClientError):
+            if attempt == retries:
+                raise
+            time.sleep(delay * (1 + 0.2 * random.random()))
+
 async def data_collector_async(stock, client, time_begin='19900101', time_end='20991231'):
     market_id = stock.market_id if stock.market != 'BJ' else '0'
     stock_url = eastmoney_base.format(market=market_id, 
@@ -273,10 +292,19 @@ async def data_collector_async(stock, client, time_begin='19900101', time_end='2
                                       time_begin=time_begin, 
                                       time_end=time_end)
     try:
-        response = await client.request(method='GET', url=stock_url)
-        response.raise_for_status()
-        response_json = await response.json()
-        stock_data = pd.DataFrame(map(lambda x: x.split(','), response_json["data"]["klines"]))
+        last_err = None
+        for attempt in range(3):
+            try:
+                response = await client.request(method='GET', url=stock_url)
+                response.raise_for_status()
+                response_json = await response.json()
+                stock_data = pd.DataFrame(map(lambda x: x.split(','), response_json["data"]["klines"]))
+                break
+            except aiohttp.ClientError as e:
+                last_err = e
+                if attempt == 2:
+                    raise
+                await asyncio.sleep(0.5 * (1 + 0.2 * random.random()))
     except (TypeError, aiohttp.ClientError) as e:
         raise QueryError("Can't find kline data") from e
     stock_data.columns = ["date", "open", "close", "high", "low", "volume", "money", "change"]

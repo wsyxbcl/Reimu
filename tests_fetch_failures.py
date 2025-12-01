@@ -2,6 +2,7 @@ import asyncio
 import unittest
 from unittest.mock import AsyncMock, patch
 
+import aiohttp
 import requests
 
 from utils import Stock, QueryError, data_collector_async
@@ -18,7 +19,7 @@ class FetchFailureTests(unittest.TestCase):
     def test_data_collector_async_handles_aiohttp_errors(self):
         stock = Stock(code="000300", name="CSI300", market_id="1", type_id="1")
         mock_client = AsyncMock()
-        mock_client.request.side_effect = Exception("boom")
+        mock_client.request.side_effect = aiohttp.ClientConnectionError("boom")
 
         async def run():
             with self.assertRaises(QueryError):
