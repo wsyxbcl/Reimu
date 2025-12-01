@@ -123,7 +123,7 @@ async def kline(message: Message, command_text: str | None = None, query: Callba
             await message.reply_photo(photo, caption=kline_caption, parse_mode=ParseMode.MARKDOWN)
     else:
         # get user's selection from inline keyboard
-        keyboard_markup = InlineKeyboardMarkup()
+        keyboard_markup = InlineKeyboardMarkup(inline_keyboard=[])
         for stock in stock_list:
             stock_emoji = _market_emoji[stock.market]
             keyboard_markup.row(InlineKeyboardButton(' '.join([stock_emoji, stock.code, stock.name]), 
@@ -315,7 +315,7 @@ async def now(message: Message, query: CallbackQuery | None = None, command_text
                 await message.reply_photo(photo, caption=now_caption, parse_mode=ParseMode.MARKDOWN)
     else:
         # get user's selection from inline keyboard
-        keyboard_markup = InlineKeyboardMarkup()
+        keyboard_markup = InlineKeyboardMarkup(inline_keyboard=[])
         for stock in stock_list:
             stock_emoji = _market_emoji[stock.market]
             keyboard_markup.row(InlineKeyboardButton(' '.join([stock_emoji, stock.code, stock.name]), 
