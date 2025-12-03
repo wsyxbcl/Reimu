@@ -30,6 +30,11 @@ _test_path = './demo'
 eastmoney_base = "http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={market}.{bench_code}&fields1=f1%2Cf2%2Cf3%2Cf4%2Cf5&fields2=f51%2Cf52%2Cf53%2Cf54%2Cf55%2Cf56%2Cf57%2Cf58&klt=101&fqt=1&beg={time_begin}&end={time_end}"
 eastmoney_base_live = "http://push2.eastmoney.com/api/qt/stock/trends2/get?fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57,f58&ut=fa5fd1943c7b386f172d6893dbfba10b&iscr=0&ndays=1&secid={market}.{bench_code}"
 headers = {'user-agent': "Mozilla/5.0 (X11; Linux x86_64; rv:92.0) Gecko/20100101 Firefox/92.0"}
+http_proxy = os.environ.get("HTTP_PROXY") or os.environ.get("http_proxy")
+https_proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
+proxy_kwargs = {}
+if http_proxy or https_proxy:
+    proxy_kwargs = {"proxy": http_proxy or https_proxy}
 _fetch_concurrency = 5
 
 # FILTERS
@@ -95,7 +100,7 @@ class Stock:
                                           time_end=time_end)
         try:
             def _fetch():
-                resp = requests.get(stock_url, timeout=10, headers=headers)
+                resp = requests.get(stock_url, timeout=10, headers=headers, **proxy_kwargs)
                 resp.raise_for_status()
                 return resp
             resp = _with_retries(_fetch)
@@ -297,7 +302,7 @@ async def data_collector_async(stock, client, time_begin='19900101', time_end='2
         last_err = None
         for attempt in range(5):
             try:
-                response = await client.request(method='GET', url=stock_url, timeout=10)
+                response = await client.request(method='GET', url=stock_url, timeout=10, **proxy_kwargs)
                 response.raise_for_status()
                 response_json = await response.json()
                 stock_data = pd.DataFrame(map(lambda x: x.split(','), response_json["data"]["klines"]))
